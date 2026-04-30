@@ -14,7 +14,135 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      daily_reflections: {
+        Row: {
+          applications: Json
+          ayah_number: number
+          created_at: string
+          id: string
+          surah_number: number
+        }
+        Insert: {
+          applications: Json
+          ayah_number: number
+          created_at?: string
+          id?: string
+          surah_number: number
+        }
+        Update: {
+          applications?: Json
+          ayah_number?: number
+          created_at?: string
+          id?: string
+          surah_number?: number
+        }
+        Relationships: []
+      }
+      favorites: {
+        Row: {
+          ayah_number: number
+          created_at: string
+          id: string
+          surah_number: number
+          user_id: string
+        }
+        Insert: {
+          ayah_number: number
+          created_at?: string
+          id?: string
+          surah_number: number
+          user_id: string
+        }
+        Update: {
+          ayah_number?: number
+          created_at?: string
+          id?: string
+          surah_number?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notes: {
+        Row: {
+          ayah_number: number
+          content: string
+          created_at: string
+          id: string
+          surah_number: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ayah_number: number
+          content: string
+          created_at?: string
+          id?: string
+          surah_number: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ayah_number?: number
+          content?: string
+          created_at?: string
+          id?: string
+          surah_number?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          preferred_reciter: string
+          preferred_tafsir: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id: string
+          preferred_reciter?: string
+          preferred_tafsir?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          preferred_reciter?: string
+          preferred_tafsir?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      streaks: {
+        Row: {
+          current_streak: number
+          last_activity_date: string | null
+          longest_streak: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          current_streak?: number
+          last_activity_date?: string | null
+          longest_streak?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          current_streak?: number
+          last_activity_date?: string | null
+          longest_streak?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
