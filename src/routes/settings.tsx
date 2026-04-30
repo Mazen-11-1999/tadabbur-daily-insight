@@ -37,7 +37,10 @@ function SettingsPage() {
   const updatePref = async (field: "preferred_tafsir" | "preferred_reciter", value: string) => {
     if (!user) return;
     if (field === "preferred_tafsir") setTafsir(value); else setReciter(value);
-    const { error } = await supabase.from("profiles").update({ [field]: value }).eq("id", user.id);
+    const update = field === "preferred_tafsir"
+      ? { preferred_tafsir: value }
+      : { preferred_reciter: value };
+    const { error } = await supabase.from("profiles").update(update).eq("id", user.id);
     if (error) toast.error("تعذر الحفظ"); else toast.success("تم الحفظ");
   };
 
