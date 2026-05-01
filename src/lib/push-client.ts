@@ -1,11 +1,11 @@
 // helpers للاشتراك في الإشعارات من المتصفح
 export const VAPID_PUBLIC_KEY = "BMaTmstosQ1stbBKyPVQ63XrF5036NblnHjwIQMDARob9HCv96aQcTRd9Uj81Mo8t9KCr3J03MCteUOe4RK300E";
 
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
+function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const raw = atob(base64);
-  const out = new Uint8Array(raw.length);
+  const out = new Uint8Array(new ArrayBuffer(raw.length));
   for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
   return out;
 }
