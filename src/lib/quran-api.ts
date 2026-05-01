@@ -2,6 +2,16 @@
 // Docs: https://alquran.cloud/api
 
 const BASE = "https://api.alquran.cloud/v1";
+// Tafseer fallback API (يحتوي ابن كثير، السعدي، الطبري)
+// docs: http://api.quran-tafseer.com
+const TAFSEER_BASE = "https://api.quran-tafseer.com/tafseer";
+
+// خرائط معرّفات التفاسير → quran-tafseer.com IDs
+const TAFSEER_COM_IDS: Record<string, number> = {
+  "ibnkathir": 4,
+  "saadi": 3,
+  "tabari": 8,
+};
 
 export interface SurahMeta {
   number: number;
@@ -32,8 +42,11 @@ export interface CombinedAyah {
 
 export const TAFSIR_OPTIONS = [
   { id: "ar.muyassar", label: "التفسير الميسّر" },
+  { id: "ibnkathir", label: "تفسير ابن كثير" },
+  { id: "saadi", label: "تفسير السعدي" },
   { id: "ar.jalalayn", label: "تفسير الجلالين" },
   { id: "ar.qurtubi", label: "تفسير القرطبي" },
+  { id: "tabari", label: "تفسير الطبري" },
 ] as const;
 
 // Reciters (AlQuran.cloud edition identifiers)
@@ -72,19 +85,38 @@ export async function getAyah(
   reciterEdition = "ar.haithamaldukhain",
 ): Promise<CombinedAyah> {
   const ref = `${surah}:${ayah}`;
-  const editions = `quran-uthmani,${tafsirEdition},${reciterEdition}`;
-  const res = await fetch(`${BASE}/ayah/${ref}/editions/${editions}`);
-  const j = await res.json();
-  if (!j.data || !Array.isArray(j.data)) {
+  const useExternalTafsir = tafsirEdition in TAFSEER_COM_IDS;
+  const alquranEditions = useExternalTafsir
+    ? `quran-uthmani,${reciterEdition}`
+    : `quran-uthmani,${tafsirEdition},${reciterEdition}`;
+
+  const [mainRes, externalTafsir] = await Promise.all([
+    fetch(`${BASE}/ayah/${ref}/editions/${alquranEditions}`).then((r) => r.json()),
+    useExternalTafsir
+      ? fetch(`${TAFSEER_BASE}/${TAFSEER_COM_IDS[tafsirEdition]}/${surah}/${ayah}`)
+          .then((r) => r.ok ? r.json() : null)
+          .catch(() => null)
+      : Promise.resolve(null),
+  ]);
+
+  if (!mainRes.data || !Array.isArray(mainRes.data)) {
     throw new Error("لم نتمكن من جلب الآية");
   }
-  const arabicData = j.data[0] as AyahData;
-  const tafsirData = j.data[1] as AyahData;
-  const audioData = j.data[2] as AyahData & { audio?: string };
+  const arabicData = mainRes.data[0] as AyahData;
+  let tafsirText: string;
+  let audioData: AyahData & { audio?: string };
+  if (useExternalTafsir) {
+    audioData = mainRes.data[1] as AyahData & { audio?: string };
+    tafsirText = externalTafsir?.text || "تعذّر جلب التفسير حالياً.";
+  } else {
+    const tafsirData = mainRes.data[1] as AyahData;
+    audioData = mainRes.data[2] as AyahData & { audio?: string };
+    tafsirText = tafsirData.text;
+  }
 
   return {
     arabic: arabicData.text,
-    tafsir: tafsirData.text,
+    tafsir: tafsirText,
     audioUrl: (audioData as { audio?: string }).audio || `https://cdn.islamic.network/quran/audio/128/${reciterEdition}/${arabicData.number}.mp3`,
     surah: arabicData.surah,
     numberInSurah: arabicData.numberInSurah,
