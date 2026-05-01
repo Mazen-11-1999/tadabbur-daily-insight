@@ -1,6 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { BookOpen, Sparkles, Heart, Settings, BookMarked } from "lucide-react";
-import type { ReactNode } from "react";
+import { BookOpen, Sparkles, Heart, Settings, BookMarked, WifiOff } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
 
 const NAV = [
   { to: "/", label: "آية اليوم", icon: Sparkles },
@@ -11,8 +11,23 @@ const NAV = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
+  const [online, setOnline] = useState(true);
+  useEffect(() => {
+    if (typeof navigator === "undefined") return;
+    setOnline(navigator.onLine);
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => { window.removeEventListener("online", on); window.removeEventListener("offline", off); };
+  }, []);
   return (
     <div className="min-h-screen pb-24 md:pb-8" dir="rtl">
+      {!online && (
+        <div className="bg-amber-500/15 border-b border-amber-500/30 text-amber-200 text-xs py-1.5 text-center flex items-center justify-center gap-2">
+          <WifiOff className="w-3.5 h-3.5" /> أنت غير متصل — يتم عرض المحتوى المخزّن
+        </div>
+      )}
       {/* Top bar */}
       <header className="sticky top-0 z-30 backdrop-blur-xl bg-background/70 border-b border-border/50">
         <div className="mx-auto max-w-3xl px-4 h-16 flex items-center justify-between">
