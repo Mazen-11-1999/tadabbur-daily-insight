@@ -1,4 +1,5 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/lib/auth-context";
 
@@ -69,6 +70,19 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!("serviceWorker" in navigator)) return;
+    // لا تُسجّل داخل preview iframe
+    const inIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
+    const isPreview = window.location.hostname.includes("id-preview--") || window.location.hostname.includes("lovableproject.com");
+    if (inIframe || isPreview) {
+      navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister()));
+      return;
+    }
+    navigator.serviceWorker.register("/sw.js").catch((e) => console.warn("SW register failed", e));
+  }, []);
+
   return (
     <AuthProvider>
       <Outlet />

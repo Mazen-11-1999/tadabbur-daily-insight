@@ -7,8 +7,12 @@ import { lovable } from "@/integrations/lovable";
 import { TAFSIR_OPTIONS, RECITER_OPTIONS } from "@/lib/quran-api";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LogIn, LogOut, User as UserIcon, Flame, BookOpen, Volume2 } from "lucide-react";
+import { LogIn, LogOut, User as UserIcon, Flame, BookOpen, Volume2, Bell, BellOff } from "lucide-react";
 import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
+import { pushSupported, subscribeToPush, unsubscribeFromPush } from "@/lib/push-client";
+import { saveSubscription, getMySubscription, removeSubscription, updateHour } from "@/server/push.functions";
+import { useServerFn } from "@tanstack/react-start";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -22,6 +26,14 @@ function SettingsPage() {
   const [tafsir, setTafsir] = useState("ar.muyassar");
   const [reciter, setReciter] = useState("ar.haithamaldukhain");
   const [streak, setStreak] = useState<{ current: number; longest: number } | null>(null);
+  const [pushOn, setPushOn] = useState(false);
+  const [hourLocal, setHourLocal] = useState(6); // ساعة محلية يختارها المستخدم
+  const [pushBusy, setPushBusy] = useState(false);
+  const supportsPush = pushSupported();
+  const saveSubFn = useServerFn(saveSubscription);
+  const getSubFn = useServerFn(getMySubscription);
+  const removeSubFn = useServerFn(removeSubscription);
+  const updateHourFn = useServerFn(updateHour);
 
   useEffect(() => {
     if (!user) return;
@@ -32,7 +44,59 @@ function SettingsPage() {
       });
     supabase.from("streaks").select("current_streak, longest_streak").eq("user_id", user.id).maybeSingle()
       .then(({ data }) => { if (data) setStreak({ current: data.current_streak, longest: data.longest_streak }); });
+    // حالة الإشعارات
+    getSubFn().then((res) => {
+      if (res?.subscription) {
+        setPushOn(true);
+        // حوّل UTC → محلي
+        const utcHour = res.subscription.notification_hour;
+        const offsetH = -new Date().getTimezoneOffset() / 60;
+        let local = (utcHour + offsetH) % 24;
+        if (local < 0) local += 24;
+        setHourLocal(Math.round(local));
+      }
+    }).catch(() => { /* noop */ });
   }, [user]);
+
+  const togglePush = async (next: boolean) => {
+    if (!user) { toast.error("سجّل الدخول أولاً"); return; }
+    if (!supportsPush) { toast.error("متصفحك لا يدعم الإشعارات"); return; }
+    setPushBusy(true);
+    try {
+      if (next) {
+        const sub = await subscribeToPush();
+        if (!sub) { toast.error("لم يتم منح إذن الإشعارات"); setPushBusy(false); return; }
+        const offsetH = -new Date().getTimezoneOffset() / 60;
+        let utcH = (hourLocal - offsetH) % 24;
+        if (utcH < 0) utcH += 24;
+        await saveSubFn({ data: { ...sub, notification_hour: Math.round(utcH), user_agent: navigator.userAgent } });
+        setPushOn(true);
+        toast.success("تم تفعيل الإشعارات اليومية ✓");
+      } else {
+        const ep = await unsubscribeFromPush();
+        await removeSubFn({ data: { endpoint: ep ?? undefined } });
+        setPushOn(false);
+        toast.success("تم إيقاف الإشعارات");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("تعذّر تحديث الإشعارات");
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
+  const changeHour = async (newHourLocal: number) => {
+    setHourLocal(newHourLocal);
+    if (!pushOn) return;
+    const offsetH = -new Date().getTimezoneOffset() / 60;
+    let utcH = (newHourLocal - offsetH) % 24;
+    if (utcH < 0) utcH += 24;
+    try {
+      await updateHourFn({ data: { notification_hour: Math.round(utcH) } });
+      toast.success("تم حفظ الوقت");
+    } catch { toast.error("تعذّر حفظ الوقت"); }
+  };
 
   const updatePref = async (field: "preferred_tafsir" | "preferred_reciter", value: string) => {
     if (!user) return;
@@ -125,6 +189,33 @@ function SettingsPage() {
         </Select>
       </section>
 
+      {/* Notifications */}
+      <section className="rounded-2xl border border-border/40 bg-card p-6 mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <label className="flex items-center gap-2 font-bold">
+            {pushOn ? <Bell className="w-5 h-5 text-gold" /> : <BellOff className="w-5 h-5 text-gold" />}
+            إشعار آية اليوم
+          </label>
+          <Switch checked={pushOn} disabled={!user || !supportsPush || pushBusy} onCheckedChange={togglePush} />
+        </div>
+        {!supportsPush && (
+          <p className="text-xs text-amber-400/80 mb-2">متصفحك لا يدعم الإشعارات. على iPhone: ثبّت التطبيق على الشاشة الرئيسية أولاً (يحتاج iOS 16.4+).</p>
+        )}
+        {!user && <p className="text-xs text-muted-foreground mb-2">سجّل الدخول لتفعيل الإشعارات.</p>}
+        <div className="mt-2">
+          <label className="block text-xs text-muted-foreground mb-2">وقت الإشعار اليومي</label>
+          <Select value={String(hourLocal)} onValueChange={(v) => changeHour(Number(v))} disabled={!user}>
+            <SelectTrigger className="bg-background border-border/60"><SelectValue /></SelectTrigger>
+            <SelectContent className="max-h-60">
+              {Array.from({ length: 24 }).map((_, h) => (
+                <SelectItem key={h} value={String(h)}>{formatHour(h)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground mt-2">يُرسل إشعار يومي بنص الآية واسم السورة في الوقت الذي تختاره.</p>
+        </div>
+      </section>
+
       {/* Install hint */}
       <section className="rounded-2xl border border-border/40 bg-card p-6 text-sm text-muted-foreground">
         <h3 className="font-bold text-foreground mb-2">📱 ثبّت التطبيق على هاتفك</h3>
@@ -137,4 +228,10 @@ function SettingsPage() {
 
 function toArabic(n: number) {
   return String(n).replace(/\d/g, (d) => "٠١٢٣٤٥٦٧٨٩"[+d]);
+}
+
+function formatHour(h: number): string {
+  const period = h < 12 ? "ص" : "م";
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${toArabic(h12)}:٠٠ ${period}`;
 }
