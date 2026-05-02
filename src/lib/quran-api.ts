@@ -41,11 +41,15 @@ export const TAFSIR_OPTIONS = [
 
 // Reciters (AlQuran.cloud edition identifiers)
 export const RECITER_OPTIONS = [
+  { id: "ar.husarymujawwad", label: "محمود الحصري — مجوّد (خاشع)" },
+  { id: "ar.mahermuaiqly", label: "ماهر المعيقلي (خاشع)" },
+  { id: "ar.muhammadayyoub", label: "محمد أيوب (خاشع ومريح)" },
   { id: "ar.alafasy", label: "مشاري العفاسي" },
-  { id: "ar.mahermuaiqly", label: "ماهر المعيقلي" },
-  { id: "ar.husary", label: "محمود الحصري" },
   { id: "ar.minshawi", label: "محمد المنشاوي" },
+  { id: "ar.husary", label: "محمود الحصري — مرتّل" },
+  { id: "ar.muhammadjibreel", label: "محمد جبريل" },
   { id: "ar.hudhaify", label: "علي الحذيفي" },
+  { id: "ar.ahmedajamy", label: "أحمد العجمي" },
   { id: "ar.shaatree", label: "أبو بكر الشاطري" },
 ] as const;
 
