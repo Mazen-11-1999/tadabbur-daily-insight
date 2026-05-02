@@ -24,7 +24,7 @@ export const Route = createFileRoute("/settings")({
 function SettingsPage() {
   const { user, signOut } = useAuth();
   const [tafsir, setTafsir] = useState("ar.muyassar");
-  const [reciter, setReciter] = useState("ar.haithamaldukhain");
+  const [reciter, setReciter] = useState("ar.alafasy");
   const [streak, setStreak] = useState<{ current: number; longest: number } | null>(null);
   const [pushOn, setPushOn] = useState(false);
   const [hourLocal, setHourLocal] = useState(6); // ساعة محلية يختارها المستخدم

@@ -23,7 +23,7 @@ function SurahPage() {
   const { user } = useAuth();
   const num = Number(surahNumber);
   const [data, setData] = useState<(SurahMeta & { ayahs: AyahData[] }) | null>(null);
-  const [reciter, setReciter] = useState("ar.haithamaldukhain");
+  const [reciter, setReciter] = useState("ar.alafasy");
   const [playingGlobal, setPlayingGlobal] = useState<number | null>(null);
   const [favSet, setFavSet] = useState<Set<number>>(new Set());
 
