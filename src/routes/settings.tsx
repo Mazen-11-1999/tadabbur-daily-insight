@@ -29,13 +29,14 @@ function SettingsPage() {
   const [pushOn, setPushOn] = useState(false);
   const [hourLocal, setHourLocal] = useState(6); // ساعة محلية يختارها المستخدم
   const [pushBusy, setPushBusy] = useState(false);
-  const supportsPush = pushSupported();
+  const [supportsPush, setSupportsPush] = useState(true); // افترض الدعم في SSR لتفادي hydration mismatch
   const saveSubFn = useServerFn(saveSubscription);
   const getSubFn = useServerFn(getMySubscription);
   const removeSubFn = useServerFn(removeSubscription);
   const updateHourFn = useServerFn(updateHour);
 
   useEffect(() => {
+    setSupportsPush(pushSupported());
     if (!user) return;
     supabase.from("profiles").select("preferred_tafsir, preferred_reciter").eq("id", user.id).maybeSingle()
       .then(({ data }) => {
