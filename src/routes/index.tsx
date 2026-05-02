@@ -31,6 +31,7 @@ function HomePage() {
   const [loadingAyah, setLoadingAyah] = useState(true);
   const [loadingApps, setLoadingApps] = useState(false);
   const [tafsirEdition, setTafsirEdition] = useState("ar.muyassar");
+  const [reciterEdition, setReciterEdition] = useState("ar.alafasy");
   const [streak, setStreak] = useState<{ current: number; longest: number } | null>(null);
   const [isFav, setIsFav] = useState(false);
 
@@ -39,20 +40,23 @@ function HomePage() {
   // Load preferences (only if logged in)
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("preferred_tafsir").eq("id", user.id).maybeSingle()
-      .then(({ data }) => { if (data?.preferred_tafsir) setTafsirEdition(data.preferred_tafsir); });
+    supabase.from("profiles").select("preferred_tafsir, preferred_reciter").eq("id", user.id).maybeSingle()
+      .then(({ data }) => {
+        if (data?.preferred_tafsir) setTafsirEdition(data.preferred_tafsir);
+        if (data?.preferred_reciter) setReciterEdition(data.preferred_reciter);
+      });
   }, [user]);
 
   // Fetch ayah
   useEffect(() => {
     let cancel = false;
     setLoadingAyah(true);
-    getAyah(dailyRef.surah, dailyRef.ayah, tafsirEdition)
+    getAyah(dailyRef.surah, dailyRef.ayah, tafsirEdition, reciterEdition)
       .then((a) => { if (!cancel) setAyah(a); })
       .catch(() => toast.error("تعذر جلب الآية"))
       .finally(() => { if (!cancel) setLoadingAyah(false); });
     return () => { cancel = true; };
-  }, [dailyRef.surah, dailyRef.ayah, tafsirEdition]);
+  }, [dailyRef.surah, dailyRef.ayah, tafsirEdition, reciterEdition]);
 
   // Generate reflections + check fav + update streak
   useEffect(() => {
