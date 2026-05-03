@@ -69,6 +69,23 @@ export async function getSurahWithAyahs(surahNumber: number, edition = "quran-ut
 }
 
 /**
+ * Fetch a full surah with arabic text + tafsir for every ayah in one request.
+ */
+export async function getSurahWithTafsir(surahNumber: number, tafsirEdition = "ar.muyassar") {
+  const res = await fetch(`${BASE}/surah/${surahNumber}/editions/quran-uthmani,${tafsirEdition}`);
+  const j = await res.json();
+  if (!j.data || !Array.isArray(j.data)) throw new Error("تعذر تحميل السورة");
+  const arabic = j.data[0] as SurahMeta & { ayahs: AyahData[] };
+  const tafsir = j.data[1] as SurahMeta & { ayahs: AyahData[] };
+  const tafsirMap = new Map<number, string>();
+  tafsir.ayahs.forEach((a) => tafsirMap.set(a.numberInSurah, a.text));
+  return {
+    ...arabic,
+    ayahs: arabic.ayahs.map((a) => ({ ...a, tafsir: tafsirMap.get(a.numberInSurah) ?? "" })),
+  };
+}
+
+/**
  * Fetch a single ayah with arabic + tafsir + audio in one shot
  * using the multi-edition endpoint.
  */
