@@ -124,3 +124,36 @@ self.addEventListener('notificationclick', (event) => {
     if (self.clients.openWindow) return self.clients.openWindow(url);
   })());
 });
+
+// ============ OFFLINE PRECACHE ON DEMAND ============
+// يستقبل رسالة من الصفحة لتنزيل القرآن كاملاً + التفسير المختار للاستخدام دون إنترنت.
+self.addEventListener('message', (event) => {
+  const msg = event.data;
+  if (!msg || msg.type !== 'PRECACHE_QURAN') return;
+  const tafsir = msg.tafsir || 'ar.muyassar';
+  const client = event.source;
+  event.waitUntil((async () => {
+    const cache = await caches.open(QURAN_CACHE);
+    let done = 0;
+    const total = 114;
+    for (let i = 1; i <= total; i++) {
+      const urls = [
+        `https://api.alquran.cloud/v1/surah/${i}/quran-uthmani`,
+        `https://api.alquran.cloud/v1/surah/${i}/editions/quran-uthmani,${tafsir}`,
+      ];
+      await Promise.all(urls.map(async (u) => {
+        try {
+          const res = await fetch(u);
+          if (res && res.status === 200) await cache.put(u, res.clone());
+        } catch {}
+      }));
+      done++;
+      if (client && 'postMessage' in client) {
+        client.postMessage({ type: 'PRECACHE_PROGRESS', done, total });
+      }
+    }
+    if (client && 'postMessage' in client) {
+      client.postMessage({ type: 'PRECACHE_DONE', total });
+    }
+  })());
+});
