@@ -7,7 +7,7 @@ import { lovable } from "@/integrations/lovable";
 import { TAFSIR_OPTIONS, RECITER_OPTIONS } from "@/lib/quran-api";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LogIn, LogOut, User as UserIcon, Flame, BookOpen, Volume2, Bell, BellOff } from "lucide-react";
+import { LogIn, LogOut, User as UserIcon, Flame, BookOpen, Volume2, Bell, BellOff, Download, Smartphone, Share2, MoreVertical, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { pushSupported, subscribeToPush, unsubscribeFromPush } from "@/lib/push-client";
@@ -30,6 +30,10 @@ function SettingsPage() {
   const [hourLocal, setHourLocal] = useState(6); // ساعة محلية يختارها المستخدم
   const [pushBusy, setPushBusy] = useState(false);
   const [supportsPush, setSupportsPush] = useState(true); // افترض الدعم في SSR لتفادي hydration mismatch
+  const [precacheBusy, setPrecacheBusy] = useState(false);
+  const [precacheProgress, setPrecacheProgress] = useState(0);
+  const [precacheDone, setPrecacheDone] = useState(false);
+  const [installed, setInstalled] = useState(false);
   const saveSubFn = useServerFn(saveSubscription);
   const getSubFn = useServerFn(getMySubscription);
   const removeSubFn = useServerFn(removeSubscription);
@@ -37,6 +41,12 @@ function SettingsPage() {
 
   useEffect(() => {
     setSupportsPush(pushSupported());
+    if (typeof window !== "undefined") {
+      const standalone = window.matchMedia?.("(display-mode: standalone)").matches
+        || (window.navigator as any).standalone === true;
+      setInstalled(!!standalone);
+      try { setPrecacheDone(localStorage.getItem("tadabbor:precached") === "1"); } catch {}
+    }
     if (!user) return;
     supabase.from("profiles").select("preferred_tafsir, preferred_reciter").eq("id", user.id).maybeSingle()
       .then(({ data }) => {
@@ -84,6 +94,38 @@ function SettingsPage() {
       toast.error("تعذّر تحديث الإشعارات");
     } finally {
       setPushBusy(false);
+    }
+  };
+
+  const downloadOffline = async () => {
+    if (!("serviceWorker" in navigator)) {
+      toast.error("متصفحك لا يدعم العمل دون إنترنت");
+      return;
+    }
+    setPrecacheBusy(true);
+    setPrecacheProgress(0);
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const onMsg = (e: MessageEvent) => {
+        const m = e.data;
+        if (!m) return;
+        if (m.type === "PRECACHE_PROGRESS") {
+          setPrecacheProgress(Math.round((m.done / m.total) * 100));
+        }
+        if (m.type === "PRECACHE_DONE") {
+          setPrecacheBusy(false);
+          setPrecacheDone(true);
+          try { localStorage.setItem("tadabbor:precached", "1"); } catch {}
+          toast.success("تم تنزيل المصحف والتفسير للاستخدام دون إنترنت ✓");
+          navigator.serviceWorker.removeEventListener("message", onMsg);
+        }
+      };
+      navigator.serviceWorker.addEventListener("message", onMsg);
+      reg.active?.postMessage({ type: "PRECACHE_QURAN", tafsir });
+    } catch (e) {
+      console.error(e);
+      toast.error("تعذّر بدء التنزيل");
+      setPrecacheBusy(false);
     }
   };
 
@@ -218,10 +260,56 @@ function SettingsPage() {
       </section>
 
       {/* Install hint */}
-      <section className="rounded-2xl border border-border/40 bg-card p-6 text-sm text-muted-foreground">
-        <h3 className="font-bold text-foreground mb-2">📱 ثبّت التطبيق على هاتفك</h3>
-        <p className="mb-1">• <strong>iPhone:</strong> اضغط زر المشاركة ثم "أضف إلى الشاشة الرئيسية".</p>
-        <p>• <strong>Android:</strong> اضغط قائمة المتصفح ثم "تثبيت التطبيق".</p>
+      <section className="rounded-2xl border border-gold/20 bg-gradient-to-br from-gold/5 to-transparent p-6 mb-4">
+        <h3 className="flex items-center gap-2 font-bold text-foreground mb-3">
+          <Smartphone className="w-5 h-5 text-gold" /> ثبّت التطبيق على هاتفك
+        </h3>
+        {installed ? (
+          <div className="flex items-center gap-2 text-emerald-400 text-sm">
+            <CheckCircle2 className="w-4 h-4" /> التطبيق مثبّت ✓
+          </div>
+        ) : (
+          <div className="space-y-3 text-sm text-muted-foreground">
+            <div className="flex items-start gap-2">
+              <Share2 className="w-4 h-4 text-gold mt-0.5 shrink-0" />
+              <p><strong className="text-foreground">iPhone (Safari):</strong> اضغط زر المشاركة <span className="text-gold">⬆︎</span> ثم اختر <strong>"إضافة إلى الشاشة الرئيسية"</strong>.</p>
+            </div>
+            <div className="flex items-start gap-2">
+              <MoreVertical className="w-4 h-4 text-gold mt-0.5 shrink-0" />
+              <p><strong className="text-foreground">Android (Chrome):</strong> اضغط قائمة المتصفح <span className="text-gold">⋮</span> ثم اختر <strong>"تثبيت التطبيق"</strong>.</p>
+            </div>
+            <p className="text-xs text-muted-foreground/80 pt-2 border-t border-border/30">بعد التثبيت يعمل التطبيق كأي تطبيق أصلي ويستقبل الإشعارات يومياً.</p>
+          </div>
+        )}
+      </section>
+
+      {/* Offline precache */}
+      <section className="rounded-2xl border border-border/40 bg-card p-6 mb-4">
+        <h3 className="flex items-center gap-2 font-bold text-foreground mb-2">
+          <Download className="w-5 h-5 text-gold" /> تنزيل المحتوى للاستخدام دون إنترنت
+        </h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          نزّل المصحف الكامل + التفسير المختار مرة واحدة لتتمكن من تصفّح كل السور دون اتصال بالإنترنت.
+        </p>
+        {precacheBusy ? (
+          <div>
+            <div className="h-2 bg-muted rounded-full overflow-hidden mb-2">
+              <div className="h-full bg-gradient-gold transition-all" style={{ width: `${precacheProgress}%` }} />
+            </div>
+            <p className="text-xs text-muted-foreground text-center">جارٍ التنزيل… {toArabic(precacheProgress)}%</p>
+          </div>
+        ) : (
+          <Button onClick={downloadOffline} className="w-full bg-gradient-gold text-primary-foreground shadow-gold">
+            <Download className="w-4 h-4 ml-2" />
+            {precacheDone ? "إعادة التنزيل / تحديث" : "ابدأ التنزيل"}
+          </Button>
+        )}
+        {precacheDone && !precacheBusy && (
+          <p className="text-xs text-emerald-400 mt-3 flex items-center gap-1">
+            <CheckCircle2 className="w-3.5 h-3.5" /> المحتوى جاهز للاستخدام دون إنترنت
+          </p>
+        )}
+        <p className="text-xs text-muted-foreground/80 mt-3">ملاحظة: التلاوات الصوتية تُحفظ تلقائياً عند تشغيلها أول مرة.</p>
       </section>
     </AppShell>
   );
