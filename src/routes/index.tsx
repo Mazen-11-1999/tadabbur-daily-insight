@@ -174,14 +174,9 @@ function HomePage() {
 
       {/* CTA / Sign in */}
       {!user ? (
-        <section className="mt-6 rounded-2xl border border-gold/30 bg-gradient-to-br from-gold/10 to-transparent p-6 text-center">
-          <h3 className="font-bold text-foreground mb-2">احفظ تدبّرك</h3>
-          <p className="text-sm text-muted-foreground mb-4">سجّل الدخول لحفظ المفضلة، تدوين الملاحظات، ومتابعة سلسلة التدبر.</p>
-          <Button onClick={handleSignIn} className="bg-gradient-gold text-primary-foreground hover:opacity-90 shadow-gold">
-            <LogIn className="w-4 h-4 ml-2" />
-            تسجيل الدخول بـ Google
-          </Button>
-        </section>
+        <div className="mt-6">
+          <AuthHero3D />
+        </div>
       ) : (
         <section className="mt-6 text-center">
           <Link to="/quran" className="text-sm text-gold hover:underline">
