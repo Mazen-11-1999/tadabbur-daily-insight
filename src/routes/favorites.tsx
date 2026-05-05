@@ -4,7 +4,6 @@ import { AppShell } from "@/components/AppShell";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { getAyah, type CombinedAyah } from "@/lib/quran-api";
-import { lovable } from "@/integrations/lovable";
 import { Button } from "@/components/ui/button";
 import { Heart, Loader2, Trash2 } from "lucide-react";
 import { AuthHero3D } from "@/components/AuthHero3D";
