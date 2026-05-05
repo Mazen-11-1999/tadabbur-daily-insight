@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { getOrGenerateReflection } from "@/server/reflections.functions";
 import { BookOpen, Flame, Loader2, Lightbulb, LogIn } from "lucide-react";
+import { AuthHero3D } from "@/components/AuthHero3D";
 import { toast } from "sonner";
 import heroImg from "@/assets/hero-night.jpg";
 
