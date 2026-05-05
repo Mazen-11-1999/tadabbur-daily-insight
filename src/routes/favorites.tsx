@@ -6,7 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { getAyah, type CombinedAyah } from "@/lib/quran-api";
 import { lovable } from "@/integrations/lovable";
 import { Button } from "@/components/ui/button";
-import { Heart, Loader2, LogIn, Trash2 } from "lucide-react";
+import { Heart, Loader2, Trash2 } from "lucide-react";
+import { AuthHero3D } from "@/components/AuthHero3D";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/favorites")({
@@ -50,17 +51,10 @@ function FavoritesPage() {
   if (!user) {
     return (
       <AppShell>
-        <div className="text-center py-20 rounded-3xl border border-border/40 bg-card">
-          <Heart className="w-12 h-12 mx-auto text-gold/40 mb-4" />
-          <h2 className="font-bold text-xl mb-2">سجّل الدخول</h2>
-          <p className="text-muted-foreground mb-6 text-sm">احفظ آياتك المفضلة وارجع إليها متى شئت.</p>
-          <Button
-            onClick={() => lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin })}
-            className="bg-gradient-gold text-primary-foreground shadow-gold"
-          >
-            <LogIn className="w-4 h-4 ml-2" /> الدخول بـ Google
-          </Button>
-        </div>
+        <AuthHero3D
+          title="المفضّلة بانتظارك"
+          subtitle="سجّل الدخول لحفظ آياتك المفضّلة والرجوع إليها متى شئت."
+        />
       </AppShell>
     );
   }
