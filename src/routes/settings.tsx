@@ -47,6 +47,10 @@ function SettingsPage() {
         || (window.navigator as any).standalone === true;
       setInstalled(!!standalone);
       try { setPrecacheDone(localStorage.getItem("tadabbor:precached") === "1"); } catch {}
+      const onBip = (e: Event) => { e.preventDefault(); setInstallPromptEvent(e); };
+      const onInstalled = () => { setInstalled(true); setInstallPromptEvent(null); toast.success("تم تثبيت التطبيق ✓"); };
+      window.addEventListener("beforeinstallprompt", onBip as any);
+      window.addEventListener("appinstalled", onInstalled);
     }
     if (!user) return;
     supabase.from("profiles").select("preferred_tafsir, preferred_reciter").eq("id", user.id).maybeSingle()
