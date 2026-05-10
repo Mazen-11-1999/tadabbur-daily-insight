@@ -1,16 +1,26 @@
 {
   "name": "تدبر — مصحف التدبر اليومي",
   "short_name": "تدبر",
+  "id": "/",
   "description": "آية كل يوم مع تفسيرها وتطبيقاتها العملية في الحياة",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
   "background_color": "#0a1929",
   "theme_color": "#0a1929",
   "lang": "ar",
   "dir": "rtl",
+  "categories": ["books", "education", "lifestyle"],
+  "shortcuts": [
+    { "name": "آية اليوم", "short_name": "آية اليوم", "url": "/", "icons": [{ "src": "/icon-512.png", "sizes": "512x512" }] },
+    { "name": "المصحف", "short_name": "المصحف", "url": "/quran", "icons": [{ "src": "/icon-512.png", "sizes": "512x512" }] },
+    { "name": "المفضّلة", "short_name": "المفضّلة", "url": "/favorites", "icons": [{ "src": "/icon-512.png", "sizes": "512x512" }] }
+  ],
   "icons": [
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/icon-512.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" }
+    { "src": "/icon-512.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
