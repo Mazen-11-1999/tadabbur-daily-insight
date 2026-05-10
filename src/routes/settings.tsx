@@ -34,6 +34,7 @@ function SettingsPage() {
   const [precacheProgress, setPrecacheProgress] = useState(0);
   const [precacheDone, setPrecacheDone] = useState(false);
   const [installed, setInstalled] = useState(false);
+  const [installPromptEvent, setInstallPromptEvent] = useState<any>(null);
   const saveSubFn = useServerFn(saveSubscription);
   const getSubFn = useServerFn(getMySubscription);
   const removeSubFn = useServerFn(removeSubscription);
