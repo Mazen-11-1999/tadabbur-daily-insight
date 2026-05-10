@@ -275,6 +275,20 @@ function SettingsPage() {
           </div>
         ) : (
           <div className="space-y-3 text-sm text-muted-foreground">
+            {installPromptEvent && (
+              <Button
+                onClick={async () => {
+                  try {
+                    await installPromptEvent.prompt();
+                    const choice = await installPromptEvent.userChoice;
+                    if (choice?.outcome === "accepted") setInstallPromptEvent(null);
+                  } catch { /* noop */ }
+                }}
+                className="w-full bg-gradient-gold text-primary-foreground shadow-gold mb-2"
+              >
+                <Download className="w-4 h-4 ml-2" /> تثبيت التطبيق الآن
+              </Button>
+            )}
             <div className="flex items-start gap-2">
               <Share2 className="w-4 h-4 text-gold mt-0.5 shrink-0" />
               <p><strong className="text-foreground">iPhone (Safari):</strong> اضغط زر المشاركة <span className="text-gold">⬆︎</span> ثم اختر <strong>"إضافة إلى الشاشة الرئيسية"</strong>.</p>
