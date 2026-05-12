@@ -1,10 +1,11 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { BookOpen, Sparkles, Heart, Settings, BookMarked, WifiOff, Search as SearchIcon } from "lucide-react";
+import { BookOpen, Sparkles, Heart, Settings, BookMarked, WifiOff, Search as SearchIcon, Target } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 const NAV = [
   { to: "/", label: "آية اليوم", icon: Sparkles },
   { to: "/quran", label: "المصحف", icon: BookOpen },
+  { to: "/khatmah", label: "الختمة", icon: Target },
   { to: "/favorites", label: "المفضلة", icon: Heart },
   { to: "/settings", label: "الإعدادات", icon: Settings },
 ] as const;
@@ -69,7 +70,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Bottom nav (mobile) */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 backdrop-blur-xl bg-background/85 border-t border-border/50">
-        <div className="mx-auto max-w-3xl grid grid-cols-4">
+        <div className="mx-auto max-w-3xl grid grid-cols-5">
           {NAV.map(({ to, label, icon: Icon }) => {
             const active = location.pathname === to;
             return (
