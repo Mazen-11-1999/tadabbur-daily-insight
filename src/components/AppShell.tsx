@@ -1,5 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { BookOpen, Sparkles, Heart, Settings, BookMarked, WifiOff } from "lucide-react";
+import { BookOpen, Sparkles, Heart, Settings, BookMarked, WifiOff, Search as SearchIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 const NAV = [
@@ -40,23 +40,28 @@ export function AppShell({ children }: { children: ReactNode }) {
               <div className="text-[10px] text-muted-foreground mt-0.5">منهج حياة</div>
             </div>
           </Link>
-          <nav className="hidden md:flex items-center gap-1">
-            {NAV.map(({ to, label, icon: Icon }) => {
-              const active = location.pathname === to;
-              return (
-                <Link
-                  key={to}
-                  to={to}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                    active ? "text-gold bg-gold/10" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  {label}
-                </Link>
-              );
-            })}
-          </nav>
+          <div className="flex items-center gap-2">
+            <nav className="hidden md:flex items-center gap-1 ml-4">
+              {NAV.map(({ to, label, icon: Icon }) => {
+                const active = location.pathname === to;
+                return (
+                  <Link
+                    key={to}
+                    to={to}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                      active ? "text-gold bg-gold/10" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {label}
+                  </Link>
+                );
+              })}
+            </nav>
+            <Link to="/search" className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/5 text-muted-foreground hover:text-gold transition-colors">
+              <SearchIcon className="w-5 h-5" />
+            </Link>
+          </div>
         </div>
       </header>
 
