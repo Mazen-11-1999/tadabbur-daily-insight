@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { getOrGenerateReflection } from "@/server/reflections.functions";
-import { BookOpen, Flame, Loader2, Lightbulb, LogIn } from "lucide-react";
+import { BookOpen, Flame, Loader2, Lightbulb, LogIn, Bookmark } from "lucide-react";
 import { AuthHero3D } from "@/components/AuthHero3D";
 import { toast } from "sonner";
 import heroImg from "@/assets/hero-night.jpg";
@@ -35,6 +35,14 @@ function HomePage() {
   const [reciterEdition, setReciterEdition] = useState("ar.alafasy");
   const [streak, setStreak] = useState<{ current: number; longest: number } | null>(null);
   const [isFav, setIsFav] = useState(false);
+
+  const [lastRead, setLastRead] = useState<{surah: number, ayah?: number, name: string} | null>(null);
+  useEffect(() => {
+    const saved = localStorage.getItem("quran_last_read");
+    if (saved) {
+      try { setLastRead(JSON.parse(saved)); } catch (e) {}
+    }
+  }, []);
 
   const dailyRef = getDailyAyahRef();
 
@@ -114,6 +122,26 @@ function HomePage() {
           )}
         </div>
       </section>
+
+      {/* Last Read Tracking */}
+      {lastRead && (
+        <section className="mb-6 rounded-2xl border border-gold/20 bg-gradient-to-br from-surface to-surface-elevated p-5 flex items-center justify-between animate-float-up">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center shrink-0">
+              <Bookmark className="w-5 h-5 text-gold" />
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground mb-1">متابعة التلاوة</div>
+              <div className="font-bold text-foreground">سورة {lastRead.name} {lastRead.ayah ? `(آية ${toArabic(lastRead.ayah)})` : ""}</div>
+            </div>
+          </div>
+          <Button asChild className="bg-gradient-gold text-primary-foreground hover:opacity-90 shadow-gold rounded-full px-5 text-sm h-9">
+            <Link to="/surah/$surahNumber" params={{ surahNumber: String(lastRead.surah) }} hash={lastRead.ayah ? String(lastRead.ayah) : undefined}>
+              متابعة
+            </Link>
+          </Button>
+        </section>
+      )}
 
       {/* Ayah */}
       {loadingAyah || !ayah ? (

@@ -10,7 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SearchRouteImport } from './routes/search'
 import { Route as QuranRouteImport } from './routes/quran'
+import { Route as KhatmahRouteImport } from './routes/khatmah'
 import { Route as FavoritesRouteImport } from './routes/favorites'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SurahSurahNumberRouteImport } from './routes/surah.$surahNumber'
@@ -21,9 +23,19 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const QuranRoute = QuranRouteImport.update({
   id: '/quran',
   path: '/quran',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KhatmahRoute = KhatmahRouteImport.update({
+  id: '/khatmah',
+  path: '/khatmah',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FavoritesRoute = FavoritesRouteImport.update({
@@ -51,7 +63,9 @@ const ApiPublicHooksSendNotificationsRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/favorites': typeof FavoritesRoute
+  '/khatmah': typeof KhatmahRoute
   '/quran': typeof QuranRoute
+  '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/surah/$surahNumber': typeof SurahSurahNumberRoute
   '/api/public/hooks/send-notifications': typeof ApiPublicHooksSendNotificationsRoute
@@ -59,7 +73,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/favorites': typeof FavoritesRoute
+  '/khatmah': typeof KhatmahRoute
   '/quran': typeof QuranRoute
+  '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/surah/$surahNumber': typeof SurahSurahNumberRoute
   '/api/public/hooks/send-notifications': typeof ApiPublicHooksSendNotificationsRoute
@@ -68,7 +84,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/favorites': typeof FavoritesRoute
+  '/khatmah': typeof KhatmahRoute
   '/quran': typeof QuranRoute
+  '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/surah/$surahNumber': typeof SurahSurahNumberRoute
   '/api/public/hooks/send-notifications': typeof ApiPublicHooksSendNotificationsRoute
@@ -78,7 +96,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/favorites'
+    | '/khatmah'
     | '/quran'
+    | '/search'
     | '/settings'
     | '/surah/$surahNumber'
     | '/api/public/hooks/send-notifications'
@@ -86,7 +106,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/favorites'
+    | '/khatmah'
     | '/quran'
+    | '/search'
     | '/settings'
     | '/surah/$surahNumber'
     | '/api/public/hooks/send-notifications'
@@ -94,7 +116,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/favorites'
+    | '/khatmah'
     | '/quran'
+    | '/search'
     | '/settings'
     | '/surah/$surahNumber'
     | '/api/public/hooks/send-notifications'
@@ -103,7 +127,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   FavoritesRoute: typeof FavoritesRoute
+  KhatmahRoute: typeof KhatmahRoute
   QuranRoute: typeof QuranRoute
+  SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
   SurahSurahNumberRoute: typeof SurahSurahNumberRoute
   ApiPublicHooksSendNotificationsRoute: typeof ApiPublicHooksSendNotificationsRoute
@@ -118,11 +144,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/quran': {
       id: '/quran'
       path: '/quran'
       fullPath: '/quran'
       preLoaderRoute: typeof QuranRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/khatmah': {
+      id: '/khatmah'
+      path: '/khatmah'
+      fullPath: '/khatmah'
+      preLoaderRoute: typeof KhatmahRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/favorites': {
@@ -159,7 +199,9 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   FavoritesRoute: FavoritesRoute,
+  KhatmahRoute: KhatmahRoute,
   QuranRoute: QuranRoute,
+  SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
   SurahSurahNumberRoute: SurahSurahNumberRoute,
   ApiPublicHooksSendNotificationsRoute: ApiPublicHooksSendNotificationsRoute,

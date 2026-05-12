@@ -1,5 +1,6 @@
 // Quran data via AlQuran.cloud API (free, no key required)
 // Docs: https://alquran.cloud/api
+import { get, set } from 'idb-keyval';
 
 const BASE = "https://api.alquran.cloud/v1";
 
@@ -155,4 +156,51 @@ export function refToGlobalNumber(surah: number, ayah: number): number {
   let acc = 0;
   for (let i = 0; i < surah - 1; i++) acc += SURAH_AYAH_COUNTS[i];
   return acc + ayah;
+}
+
+export interface SearchResult {
+  surahNumber: number;
+  surahName: string;
+  ayahNumber: number;
+  globalNumber: number;
+  cleanText: string;
+  uthmaniText: string;
+}
+
+export async function getQuranSearchIndex(): Promise<SearchResult[]> {
+  const CACHE_KEY = "quran_search_index";
+  let index = await get(CACHE_KEY);
+  if (index) return index;
+
+  const [cleanRes, uthmaniRes] = await Promise.all([
+    fetch(`${BASE}/quran/quran-simple-clean`),
+    fetch(`${BASE}/quran/quran-uthmani`)
+  ]);
+  const cleanJson = await cleanRes.json();
+  const uthmaniJson = await uthmaniRes.json();
+
+  const ayahs: SearchResult[] = [];
+  for (let s = 0; s < cleanJson.data.surahs.length; s++) {
+    const cleanSurah = cleanJson.data.surahs[s];
+    const uthmaniSurah = uthmaniJson.data.surahs[s];
+    for (let a = 0; a < cleanSurah.ayahs.length; a++) {
+      ayahs.push({
+        surahNumber: cleanSurah.number,
+        surahName: cleanSurah.name,
+        ayahNumber: cleanSurah.ayahs[a].numberInSurah,
+        globalNumber: cleanSurah.ayahs[a].number,
+        cleanText: cleanSurah.ayahs[a].text,
+        uthmaniText: uthmaniSurah.ayahs[a].text,
+      });
+    }
+  }
+  await set(CACHE_KEY, ayahs);
+  return ayahs;
+}
+
+export async function searchQuran(query: string): Promise<SearchResult[]> {
+  const index = await getQuranSearchIndex();
+  const normalize = (text: string) => text.replace(/[\u0617-\u061A\u064B-\u0652\u06D6-\u06DC\u06DF-\u06E8\u06EA-\u06ED]/g, "").replace(/[أإآا]/g, "ا").replace(/[ةه]/g, "ه").replace(/[ىي]/g, "ي");
+  const q = normalize(query);
+  return index.filter(a => normalize(a.cleanText).includes(q));
 }
