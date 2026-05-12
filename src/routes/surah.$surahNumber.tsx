@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { getSurahWithTafsir, type AyahData, type SurahMeta, TAFSIR_OPTIONS } from "@/lib/quran-api";
@@ -29,6 +29,24 @@ function SurahPage() {
   const [favSet, setFavSet] = useState<Set<number>>(new Set());
   const [openTafsir, setOpenTafsir] = useState<Set<number>>(new Set());
 
+  // update last read
+  useEffect(() => {
+    if (data) {
+      localStorage.setItem("quran_last_read", JSON.stringify({
+        surah: num,
+        name: data.name,
+      }));
+    }
+  }, [data, num]);
+
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (data && hash) {
+      const el = document.getElementById(`ayah-${hash.replace("#", "")}`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [data, hash]);
+
   useEffect(() => {
     if (user) {
       supabase.from("profiles").select("preferred_reciter, preferred_tafsir").eq("id", user.id).maybeSingle()
@@ -55,6 +73,11 @@ function SurahPage() {
     audio.addEventListener("ended", () => setPlayingGlobal(null));
     audio.play().catch(() => toast.error("تعذر تشغيل التلاوة"));
     setPlayingGlobal(ayahNum);
+    localStorage.setItem("quran_last_read", JSON.stringify({
+      surah: num,
+      ayah: ayahNum,
+      name: data?.name || "",
+    }));
   };
 
   const toggleFav = async (ayahNum: number) => {
@@ -101,7 +124,7 @@ function SurahPage() {
 
       <div className="space-y-4">
         {data.ayahs.map((a) => (
-          <div key={a.number} className="rounded-2xl border border-border/40 bg-card p-5 hover:border-gold/30 transition-colors">
+          <div key={a.number} id={`ayah-${a.numberInSurah}`} className="rounded-2xl border border-border/40 bg-card p-5 hover:border-gold/30 transition-colors">
             <p className="ayah-text text-xl text-foreground leading-[2.4] mb-3">
               {a.text}
               <span className="inline-block mx-2 text-gold text-base">﴿{toArabic(a.numberInSurah)}﴾</span>
