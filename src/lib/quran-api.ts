@@ -40,19 +40,57 @@ export const TAFSIR_OPTIONS = [
   { id: "ar.baghawi", label: "تفسير البغوي" },
 ] as const;
 
-// Reciters (AlQuran.cloud edition identifiers)
-export const RECITER_OPTIONS = [
-  { id: "ar.husarymujawwad", label: "محمود الحصري — مجوّد (خاشع)" },
-  { id: "ar.mahermuaiqly", label: "ماهر المعيقلي (خاشع)" },
-  { id: "ar.muhammadayyoub", label: "محمد أيوب (خاشع ومريح)" },
-  { id: "ar.alafasy", label: "مشاري العفاسي" },
-  { id: "ar.minshawi", label: "محمد المنشاوي" },
-  { id: "ar.husary", label: "محمود الحصري — مرتّل" },
-  { id: "ar.muhammadjibreel", label: "محمد جبريل" },
-  { id: "ar.hudhaify", label: "علي الحذيفي" },
-  { id: "ar.ahmedajamy", label: "أحمد العجمي" },
-  { id: "ar.shaatree", label: "أبو بكر الشاطري" },
-] as const;
+// Reciters with audio source metadata.
+// - "alquran": per-ayah audio via cdn.islamic.network (highlights each verse)
+// - "everyayah": per-ayah audio via everyayah.com (highlights each verse)
+// - "fullsurah": single full-surah MP3; highlight is approximated by verse length
+export type ReciterAudio =
+  | { type: "alquran"; edition: string }
+  | { type: "everyayah"; folder: string }
+  | { type: "fullsurah"; url: (surah: number) => string };
+
+export interface ReciterOption {
+  id: string;
+  label: string;
+  audio: ReciterAudio;
+}
+
+const pad3 = (n: number) => String(n).padStart(3, "0");
+
+export const RECITER_OPTIONS: ReciterOption[] = [
+  { id: "ar.husarymujawwad", label: "محمود الحصري — مجوّد (خاشع)", audio: { type: "alquran", edition: "ar.husarymujawwad" } },
+  { id: "ar.mahermuaiqly", label: "ماهر المعيقلي (خاشع)", audio: { type: "alquran", edition: "ar.mahermuaiqly" } },
+  { id: "ar.muhammadayyoub", label: "محمد أيوب (خاشع ومريح)", audio: { type: "alquran", edition: "ar.muhammadayyoub" } },
+  { id: "ar.alafasy", label: "مشاري العفاسي", audio: { type: "alquran", edition: "ar.alafasy" } },
+  { id: "ar.minshawi", label: "محمد المنشاوي", audio: { type: "alquran", edition: "ar.minshawi" } },
+  { id: "ar.husary", label: "محمود الحصري — مرتّل", audio: { type: "alquran", edition: "ar.husary" } },
+  { id: "ar.muhammadjibreel", label: "محمد جبريل", audio: { type: "alquran", edition: "ar.muhammadjibreel" } },
+  { id: "ar.hudhaify", label: "علي الحذيفي", audio: { type: "alquran", edition: "ar.hudhaify" } },
+  { id: "ar.ahmedajamy", label: "أحمد العجمي", audio: { type: "alquran", edition: "ar.ahmedajamy" } },
+  { id: "ar.shaatree", label: "أبو بكر الشاطري", audio: { type: "alquran", edition: "ar.shaatree" } },
+  // New calm reciters
+  { id: "ea.fares_abbad", label: "فارس عباد (خاشع)", audio: { type: "everyayah", folder: "Fares_Abbad_64kbps" } },
+  { id: "mq.islam_sobhi", label: "إسلام صبحي (هادئ ومريح)", audio: { type: "fullsurah", url: (n) => `https://server14.mp3quran.net/islam/Rewayat-Hafs-A-n-Assem/${pad3(n)}.mp3` } },
+  { id: "mq.dukhain", label: "هيثم الدخين (سكينة)", audio: { type: "fullsurah", url: (n) => `https://server16.mp3quran.net/h_dukhain/Rewayat-Hafs-A-n-Assem/${pad3(n)}.mp3` } },
+  { id: "mq.raad_kurdi", label: "رعد محمد الكردي (دافئ)", audio: { type: "fullsurah", url: (n) => `https://server6.mp3quran.net/kurdi/${pad3(n)}.mp3` } },
+];
+
+export function getReciter(id: string): ReciterOption {
+  return RECITER_OPTIONS.find((r) => r.id === id) ?? RECITER_OPTIONS[3];
+}
+
+export function ayahAudioUrl(reciter: ReciterOption, surah: number, ayah: number, globalNumber: number): string {
+  const a = reciter.audio;
+  if (a.type === "alquran") return `https://cdn.islamic.network/quran/audio/128/${a.edition}/${globalNumber}.mp3`;
+  if (a.type === "everyayah") return `https://everyayah.com/data/${a.folder}/${pad3(surah)}${pad3(ayah)}.mp3`;
+  // fullsurah: caller should use surahAudioUrl instead; fallback to alafasy per-ayah
+  return `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalNumber}.mp3`;
+}
+
+export function surahAudioUrl(reciter: ReciterOption, surah: number): string | null {
+  if (reciter.audio.type === "fullsurah") return reciter.audio.url(surah);
+  return null;
+}
 
 let _surahsCache: SurahMeta[] | null = null;
 export async function getSurahs(): Promise<SurahMeta[]> {
@@ -97,7 +135,10 @@ export async function getAyah(
   reciterEdition = "ar.alafasy",
 ): Promise<CombinedAyah> {
   const ref = `${surah}:${ayah}`;
-  const editions = `quran-uthmani,${tafsirEdition},${reciterEdition}`;
+  // Daily ayah needs per-ayah audio. If the selected reciter is a full-surah-only one,
+  // fall back to Alafasy for the single-ayah preview.
+  const safeReciter = reciterEdition.startsWith("ar.") ? reciterEdition : "ar.alafasy";
+  const editions = `quran-uthmani,${tafsirEdition},${safeReciter}`;
   const mainRes = await fetch(`${BASE}/ayah/${ref}/editions/${editions}`).then((r) => r.json());
 
   if (!mainRes.data || !Array.isArray(mainRes.data)) {
@@ -111,7 +152,7 @@ export async function getAyah(
   return {
     arabic: arabicData.text,
     tafsir: tafsirText,
-    audioUrl: (audioData as { audio?: string }).audio || `https://cdn.islamic.network/quran/audio/128/${reciterEdition}/${arabicData.number}.mp3`,
+    audioUrl: (audioData as { audio?: string }).audio || `https://cdn.islamic.network/quran/audio/128/${safeReciter}/${arabicData.number}.mp3`,
     surah: arabicData.surah,
     numberInSurah: arabicData.numberInSurah,
     globalNumber: arabicData.number,

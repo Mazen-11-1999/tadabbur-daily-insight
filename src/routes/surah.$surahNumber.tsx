@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { getSurahWithTafsir, type AyahData, type SurahMeta, TAFSIR_OPTIONS } from "@/lib/quran-api";
+import { getSurahWithTafsir, type AyahData, type SurahMeta, TAFSIR_OPTIONS, getReciter, ayahAudioUrl, surahAudioUrl } from "@/lib/quran-api";
 import { Loader2, Play, Pause, Heart, ArrowRight, BookOpen, SkipForward, SkipBack, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
@@ -33,6 +33,8 @@ function SurahPage() {
   const [progress, setProgress] = useState(0); // 0..1 within current ayah
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const currentIdxRef = useRef<number | null>(null);
+  // For full-surah audio: cumulative weighted boundaries (seconds) per ayah
+  const boundariesRef = useRef<number[] | null>(null);
 
   useEffect(() => { currentIdxRef.current = currentIdx; }, [currentIdx]);
 
@@ -66,6 +68,7 @@ function SurahPage() {
       audioRef.current.src = "";
       audioRef.current = null;
     }
+    boundariesRef.current = null;
     setPlaying(false);
     setCurrentIdx(null);
     setProgress(0);
@@ -76,11 +79,13 @@ function SurahPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [num, reciter]);
 
-  const playFromIndex = (idx: number) => {
+  // ---- Per-ayah sequential playback (alquran / everyayah) ----
+  const playPerAyahFrom = (idx: number) => {
     if (!data) return;
     if (idx < 0 || idx >= data.ayahs.length) { stopAudio(); return; }
+    const rec = getReciter(reciter);
     const ayah = data.ayahs[idx];
-    const url = `https://cdn.islamic.network/quran/audio/128/${reciter}/${ayah.number}.mp3`;
+    const url = ayahAudioUrl(rec, num, ayah.numberInSurah, ayah.number);
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = "";
@@ -96,7 +101,7 @@ function SurahPage() {
     a.addEventListener("ended", () => {
       const next = (currentIdxRef.current ?? idx) + 1;
       if (data && next < data.ayahs.length) {
-        playFromIndex(next);
+        playPerAyahFrom(next);
       } else {
         stopAudio();
         toast.success("تمّت تلاوة السورة");
@@ -106,13 +111,86 @@ function SurahPage() {
     a.addEventListener("pause", () => setPlaying(false));
     a.addEventListener("error", () => { toast.error("تعذر تشغيل التلاوة"); stopAudio(); });
 
-    // scroll the current ayah into view
     requestAnimationFrame(() => {
       const el = document.getElementById(`ayah-${ayah.numberInSurah}`);
       el?.scrollIntoView({ behavior: "smooth", block: "center" });
     });
 
     a.play().catch(() => { toast.error("تعذر تشغيل التلاوة"); stopAudio(); });
+  };
+
+  // ---- Full-surah single-file playback (mp3quran reciters) ----
+  // Highlight approximation: ayah boundaries proportional to ayah text length.
+  const playFullSurah = (seekAyahIdx = 0) => {
+    if (!data) return;
+    const rec = getReciter(reciter);
+    const url = surahAudioUrl(rec, num);
+    if (!url) return;
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; }
+    const a = new Audio(url);
+    audioRef.current = a;
+    setCurrentIdx(seekAyahIdx);
+    setProgress(0);
+
+    const computeBoundaries = () => {
+      if (!data || !a.duration || !isFinite(a.duration)) return;
+      const weights = data.ayahs.map((x) => Math.max(1, x.text.length));
+      const total = weights.reduce((s, w) => s + w, 0);
+      let acc = 0;
+      boundariesRef.current = weights.map((w) => {
+        acc += w;
+        return (acc / total) * a.duration;
+      });
+      if (seekAyahIdx > 0) {
+        const start = seekAyahIdx === 0 ? 0 : boundariesRef.current[seekAyahIdx - 1];
+        a.currentTime = start;
+      }
+    };
+
+    a.addEventListener("loadedmetadata", computeBoundaries);
+    a.addEventListener("timeupdate", () => {
+      const bs = boundariesRef.current;
+      if (!bs || !a.duration) return;
+      const t = a.currentTime;
+      let idx = bs.findIndex((b) => t < b);
+      if (idx === -1) idx = bs.length - 1;
+      const start = idx === 0 ? 0 : bs[idx - 1];
+      const end = bs[idx];
+      const local = end > start ? (t - start) / (end - start) : 0;
+      setProgress(Math.min(1, Math.max(0, local)));
+      if (idx !== currentIdxRef.current) {
+        setCurrentIdx(idx);
+        requestAnimationFrame(() => {
+          const ay = data!.ayahs[idx];
+          document.getElementById(`ayah-${ay.numberInSurah}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+      }
+    });
+    a.addEventListener("ended", () => { stopAudio(); toast.success("تمّت تلاوة السورة"); });
+    a.addEventListener("playing", () => setPlaying(true));
+    a.addEventListener("pause", () => setPlaying(false));
+    a.addEventListener("error", () => { toast.error("تعذر تشغيل التلاوة"); stopAudio(); });
+
+    a.play().catch(() => { toast.error("تعذر تشغيل التلاوة"); stopAudio(); });
+  };
+
+  const isFullSurahReciter = () => getReciter(reciter).audio.type === "fullsurah";
+
+  const playFromIndex = (idx: number) => {
+    if (isFullSurahReciter()) {
+      // If audio already loaded, just seek; otherwise start fresh from idx
+      if (audioRef.current && boundariesRef.current) {
+        const bs = boundariesRef.current;
+        const start = idx === 0 ? 0 : bs[idx - 1];
+        audioRef.current.currentTime = start;
+        setCurrentIdx(idx);
+        audioRef.current.play().catch(() => {});
+      } else {
+        playFullSurah(idx);
+      }
+    } else {
+      playPerAyahFrom(idx);
+    }
   };
 
   const togglePlay = () => {
