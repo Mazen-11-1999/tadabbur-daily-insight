@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { getSurahWithTafsir, type AyahData, type SurahMeta, TAFSIR_OPTIONS, getReciter, ayahAudioUrl, surahAudioUrl } from "@/lib/quran-api";
+import { getSurahWithTafsir, type AyahData, type SurahMeta, TAFSIR_OPTIONS, getReciter, ayahAudioUrl, surahAudioUrl, getChapterWordSync, type AyahWordSync } from "@/lib/quran-api";
 import { Loader2, Play, Pause, Heart, ArrowRight, BookOpen, SkipForward, SkipBack, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
@@ -31,12 +31,16 @@ function SurahPage() {
   const [playing, setPlaying] = useState(false);
   const [currentIdx, setCurrentIdx] = useState<number | null>(null); // index in data.ayahs
   const [progress, setProgress] = useState(0); // 0..1 within current ayah
+  const [currentWord, setCurrentWord] = useState<number>(0); // 1-based word position in current ayah, 0 = none
+  const [wordSync, setWordSync] = useState<AyahWordSync[] | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const currentIdxRef = useRef<number | null>(null);
+  const wordSyncRef = useRef<AyahWordSync[] | null>(null);
   // For full-surah audio: cumulative weighted boundaries (seconds) per ayah
   const boundariesRef = useRef<number[] | null>(null);
 
   useEffect(() => { currentIdxRef.current = currentIdx; }, [currentIdx]);
+  useEffect(() => { wordSyncRef.current = wordSync; }, [wordSync]);
 
   useEffect(() => {
     if (data) {
@@ -61,6 +65,18 @@ function SurahPage() {
     getSurahWithTafsir(num, tafsirEdition).then(setData).catch(() => toast.error("تعذر تحميل السورة"));
   }, [num, tafsirEdition]);
 
+  // Load word-level timing segments when reciter supports it
+  useEffect(() => {
+    setWordSync(null);
+    const rec = getReciter(reciter);
+    if (!rec.quranComId) return;
+    let alive = true;
+    getChapterWordSync(rec.quranComId, num)
+      .then((s) => { if (alive) setWordSync(s); })
+      .catch(() => { /* fall back silently */ });
+    return () => { alive = false; };
+  }, [reciter, num]);
+
   // stop audio on unmount / surah / reciter change
   const stopAudio = () => {
     if (audioRef.current) {
@@ -72,12 +88,56 @@ function SurahPage() {
     setPlaying(false);
     setCurrentIdx(null);
     setProgress(0);
+    setCurrentWord(0);
   };
 
   useEffect(() => {
     return () => stopAudio();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [num, reciter]);
+
+  // ---- Word-sync sequential playback (Quran.com segments) ----
+  const playWordSyncFrom = (idx: number) => {
+    if (!data || !wordSyncRef.current) return;
+    const segs = wordSyncRef.current;
+    if (idx < 0 || idx >= segs.length) { stopAudio(); return; }
+    const item = segs[idx];
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; }
+    const a = new Audio(item.audioUrl);
+    audioRef.current = a;
+    setCurrentIdx(idx);
+    setProgress(0);
+    setCurrentWord(0);
+
+    a.addEventListener("timeupdate", () => {
+      if (a.duration > 0) setProgress(a.currentTime / a.duration);
+      const tMs = a.currentTime * 1000;
+      const list = wordSyncRef.current?.[idx]?.segments ?? [];
+      // find segment whose [start,end] contains tMs
+      let w = 0;
+      for (let i = 0; i < list.length; i++) {
+        const s = list[i];
+        // s = [seg_idx, word_pos, start_ms, end_ms]
+        if (tMs >= s[2] && tMs <= s[3]) { w = s[1]; break; }
+        if (tMs > s[3]) w = s[1]; // passed it — keep last
+      }
+      setCurrentWord(w);
+    });
+    a.addEventListener("ended", () => {
+      const next = (currentIdxRef.current ?? idx) + 1;
+      if (next < segs.length) playWordSyncFrom(next);
+      else { stopAudio(); toast.success("تمّت تلاوة السورة"); }
+    });
+    a.addEventListener("playing", () => setPlaying(true));
+    a.addEventListener("pause", () => setPlaying(false));
+    a.addEventListener("error", () => { toast.error("تعذر تشغيل التلاوة"); stopAudio(); });
+
+    requestAnimationFrame(() => {
+      const ay = data.ayahs[idx];
+      document.getElementById(`ayah-${ay.numberInSurah}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    a.play().catch(() => { toast.error("تعذر تشغيل التلاوة"); stopAudio(); });
+  };
 
   // ---- Per-ayah sequential playback (alquran / everyayah) ----
   const playPerAyahFrom = (idx: number) => {
@@ -177,7 +237,9 @@ function SurahPage() {
   const isFullSurahReciter = () => getReciter(reciter).audio.type === "fullsurah";
 
   const playFromIndex = (idx: number) => {
-    if (isFullSurahReciter()) {
+    if (wordSyncRef.current) {
+      playWordSyncFrom(idx);
+    } else if (isFullSurahReciter()) {
       // If audio already loaded, just seek; otherwise start fresh from idx
       if (audioRef.current && boundariesRef.current) {
         const bs = boundariesRef.current;
@@ -290,18 +352,41 @@ function SurahPage() {
           <p className="ayah-text text-2xl sm:text-[26px] text-justify text-foreground leading-[2.6]" dir="rtl">
             {data.ayahs.map((a, idx) => {
               const isCurrent = idx === currentIdx;
+              const useWords = !!wordSync;
+              const words = useWords ? a.text.split(/\s+/) : null;
               return (
                 <span
                   key={a.number}
                   id={`ayah-${a.numberInSurah}`}
                   onClick={() => playFromIndex(idx)}
                   className={`cursor-pointer rounded-md transition-all px-1 ${
-                    isCurrent
+                    isCurrent && !useWords
                       ? "bg-gold/20 text-gold-foreground shadow-[0_0_24px_rgba(201,168,76,0.25)]"
                       : "hover:bg-gold/5"
                   }`}
                 >
-                  {a.text}
+                  {useWords && words
+                    ? words.map((w, wi) => {
+                        const wordPos = wi + 1;
+                        const isLiveWord = isCurrent && wordPos === currentWord;
+                        const isPastWord = isCurrent && currentWord > 0 && wordPos < currentWord;
+                        return (
+                          <span
+                            key={wi}
+                            className={`transition-all duration-150 rounded px-0.5 ${
+                              isLiveWord
+                                ? "bg-gold text-primary-foreground shadow-[0_0_18px_rgba(201,168,76,0.55)]"
+                                : isPastWord
+                                  ? "text-gold/90"
+                                  : ""
+                            }`}
+                          >
+                            {w}
+                            {wi < words.length - 1 ? " " : ""}
+                          </span>
+                        );
+                      })
+                    : a.text}
                   <button
                     onClick={(e) => { e.stopPropagation(); toggleFav(a.numberInSurah); }}
                     className="inline-flex items-center justify-center mx-1 align-middle hover:scale-110 transition-transform"

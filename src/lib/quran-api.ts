@@ -53,6 +53,8 @@ export interface ReciterOption {
   id: string;
   label: string;
   audio: ReciterAudio;
+  /** Quran.com recitation id — when set, enables word-level highlighting. */
+  quranComId?: number;
 }
 
 const pad3 = (n: number) => String(n).padStart(3, "0");
@@ -61,13 +63,15 @@ export const RECITER_OPTIONS: ReciterOption[] = [
   { id: "ar.husarymujawwad", label: "محمود الحصري — مجوّد (خاشع)", audio: { type: "alquran", edition: "ar.husarymujawwad" } },
   { id: "ar.mahermuaiqly", label: "ماهر المعيقلي (خاشع)", audio: { type: "alquran", edition: "ar.mahermuaiqly" } },
   { id: "ar.muhammadayyoub", label: "محمد أيوب (خاشع ومريح)", audio: { type: "alquran", edition: "ar.muhammadayyoub" } },
-  { id: "ar.alafasy", label: "مشاري العفاسي", audio: { type: "alquran", edition: "ar.alafasy" } },
-  { id: "ar.minshawi", label: "محمد المنشاوي", audio: { type: "alquran", edition: "ar.minshawi" } },
-  { id: "ar.husary", label: "محمود الحصري — مرتّل", audio: { type: "alquran", edition: "ar.husary" } },
+  { id: "ar.alafasy", label: "مشاري العفاسي ✨ كلمة بكلمة", audio: { type: "alquran", edition: "ar.alafasy" }, quranComId: 7 },
+  { id: "ar.minshawi", label: "محمد المنشاوي ✨ كلمة بكلمة", audio: { type: "alquran", edition: "ar.minshawi" }, quranComId: 9 },
+  { id: "ar.husary", label: "محمود الحصري — مرتّل ✨ كلمة بكلمة", audio: { type: "alquran", edition: "ar.husary" }, quranComId: 6 },
   { id: "ar.muhammadjibreel", label: "محمد جبريل", audio: { type: "alquran", edition: "ar.muhammadjibreel" } },
   { id: "ar.hudhaify", label: "علي الحذيفي", audio: { type: "alquran", edition: "ar.hudhaify" } },
   { id: "ar.ahmedajamy", label: "أحمد العجمي", audio: { type: "alquran", edition: "ar.ahmedajamy" } },
-  { id: "ar.shaatree", label: "أبو بكر الشاطري", audio: { type: "alquran", edition: "ar.shaatree" } },
+  { id: "ar.shaatree", label: "أبو بكر الشاطري ✨ كلمة بكلمة", audio: { type: "alquran", edition: "ar.shaatree" }, quranComId: 4 },
+  { id: "ar.abdulbasit", label: "عبدالباسط عبدالصمد ✨ كلمة بكلمة", audio: { type: "alquran", edition: "ar.abdulbasitmurattal" }, quranComId: 2 },
+  { id: "ar.sudais", label: "عبدالرحمن السديس ✨ كلمة بكلمة", audio: { type: "alquran", edition: "ar.abdurrahmaansudais" }, quranComId: 3 },
   // New calm reciters
   { id: "ea.fares_abbad", label: "فارس عباد (خاشع)", audio: { type: "everyayah", folder: "Fares_Abbad_64kbps" } },
   { id: "mq.islam_sobhi", label: "إسلام صبحي (هادئ ومريح)", audio: { type: "fullsurah", url: (n) => `https://server14.mp3quran.net/islam/Rewayat-Hafs-A-n-Assem/${pad3(n)}.mp3` } },
@@ -90,6 +94,36 @@ export function ayahAudioUrl(reciter: ReciterOption, surah: number, ayah: number
 export function surahAudioUrl(reciter: ReciterOption, surah: number): string | null {
   if (reciter.audio.type === "fullsurah") return reciter.audio.url(surah);
   return null;
+}
+
+/**
+ * Quran.com per-ayah audio + word-level timing segments.
+ * segment format: [segment_idx, word_position (1-based), start_ms, end_ms]
+ */
+export interface AyahWordSync {
+  verseKey: string;
+  numberInSurah: number;
+  audioUrl: string;
+  segments: number[][];
+}
+
+const _wordSyncCache = new Map<string, AyahWordSync[]>();
+export async function getChapterWordSync(quranComId: number, chapter: number): Promise<AyahWordSync[]> {
+  const key = `${quranComId}:${chapter}`;
+  const cached = _wordSyncCache.get(key);
+  if (cached) return cached;
+  const res = await fetch(
+    `https://api.quran.com/api/v4/recitations/${quranComId}/by_chapter/${chapter}?per_page=300&fields=segments`,
+  );
+  const j = await res.json();
+  const out: AyahWordSync[] = (j.audio_files ?? []).map((f: { verse_key: string; url: string; segments: number[][] }) => ({
+    verseKey: f.verse_key,
+    numberInSurah: Number(f.verse_key.split(":")[1]),
+    audioUrl: f.url.startsWith("http") ? f.url : `https://verses.quran.com/${f.url}`,
+    segments: f.segments ?? [],
+  }));
+  _wordSyncCache.set(key, out);
+  return out;
 }
 
 let _surahsCache: SurahMeta[] | null = null;
