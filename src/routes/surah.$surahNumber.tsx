@@ -352,18 +352,41 @@ function SurahPage() {
           <p className="ayah-text text-2xl sm:text-[26px] text-justify text-foreground leading-[2.6]" dir="rtl">
             {data.ayahs.map((a, idx) => {
               const isCurrent = idx === currentIdx;
+              const useWords = !!wordSync;
+              const words = useWords ? a.text.split(/\s+/) : null;
               return (
                 <span
                   key={a.number}
                   id={`ayah-${a.numberInSurah}`}
                   onClick={() => playFromIndex(idx)}
                   className={`cursor-pointer rounded-md transition-all px-1 ${
-                    isCurrent
+                    isCurrent && !useWords
                       ? "bg-gold/20 text-gold-foreground shadow-[0_0_24px_rgba(201,168,76,0.25)]"
                       : "hover:bg-gold/5"
                   }`}
                 >
-                  {a.text}
+                  {useWords && words
+                    ? words.map((w, wi) => {
+                        const wordPos = wi + 1;
+                        const isLiveWord = isCurrent && wordPos === currentWord;
+                        const isPastWord = isCurrent && currentWord > 0 && wordPos < currentWord;
+                        return (
+                          <span
+                            key={wi}
+                            className={`transition-all duration-150 rounded px-0.5 ${
+                              isLiveWord
+                                ? "bg-gold text-primary-foreground shadow-[0_0_18px_rgba(201,168,76,0.55)]"
+                                : isPastWord
+                                  ? "text-gold/90"
+                                  : ""
+                            }`}
+                          >
+                            {w}
+                            {wi < words.length - 1 ? " " : ""}
+                          </span>
+                        );
+                      })
+                    : a.text}
                   <button
                     onClick={(e) => { e.stopPropagation(); toggleFav(a.numberInSurah); }}
                     className="inline-flex items-center justify-center mx-1 align-middle hover:scale-110 transition-transform"
