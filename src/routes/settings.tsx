@@ -11,7 +11,7 @@ import { LogIn, LogOut, User as UserIcon, Flame, BookOpen, Volume2, Bell, BellOf
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { pushSupported, subscribeToPush, unsubscribeFromPush } from "@/lib/push-client";
-import { saveSubscription, getMySubscription, removeSubscription, updateHour } from "@/server/push.functions";
+import { saveSubscription, getMySubscription, removeSubscription, updateHour } from "@/lib/push.functions";
 import { useServerFn } from "@tanstack/react-start";
 
 export const Route = createFileRoute("/settings")({
