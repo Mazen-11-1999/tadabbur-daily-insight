@@ -7,7 +7,7 @@ import { getAyah, getDailyAyahRef, type CombinedAyah, TAFSIR_OPTIONS } from "@/l
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
-import { getOrGenerateReflection } from "@/server/reflections.functions";
+import { getOrGenerateReflection } from "@/lib/reflections.functions";
 import { BookOpen, Flame, Loader2, Lightbulb, LogIn, Bookmark } from "lucide-react";
 import { AuthHero3D } from "@/components/AuthHero3D";
 import { toast } from "sonner";
