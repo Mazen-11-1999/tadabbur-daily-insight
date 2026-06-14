@@ -38,6 +38,10 @@ function SurahPage() {
   const wordSyncRef = useRef<AyahWordSync[] | null>(null);
   // Preloaded next-ayah Audio element to remove the gap between ayahs.
   const preloadRef = useRef<HTMLAudioElement | null>(null);
+  // AbortController used to detach listeners on the previous audio before
+  // we clear its src (clearing src can fire a spurious "error" event that
+  // would otherwise call stopAudio and kill the just-started next ayah).
+  const listenersAbortRef = useRef<AbortController | null>(null);
   // For full-surah audio: cumulative weighted boundaries (seconds) per ayah
   const boundariesRef = useRef<number[] | null>(null);
 
@@ -81,6 +85,10 @@ function SurahPage() {
 
   // stop audio on unmount / surah / reciter change
   const stopAudio = () => {
+    if (listenersAbortRef.current) {
+      listenersAbortRef.current.abort();
+      listenersAbortRef.current = null;
+    }
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = "";
@@ -109,7 +117,12 @@ function SurahPage() {
     const segs = wordSyncRef.current;
     if (idx < 0 || idx >= segs.length) { stopAudio(); return; }
     const item = segs[idx];
+    // Detach old listeners FIRST so clearing src doesn't trigger our error handler.
+    if (listenersAbortRef.current) listenersAbortRef.current.abort();
     if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; }
+    const ac = new AbortController();
+    listenersAbortRef.current = ac;
+    const opts = { signal: ac.signal } as AddEventListenerOptions;
     // Use preloaded audio if it matches the next ayah's URL
     let a: HTMLAudioElement;
     if (preloadRef.current && preloadRef.current.src === item.audioUrl) {
@@ -149,15 +162,15 @@ function SurahPage() {
           preloadRef.current = p;
         }
       }
-    });
+    }, opts);
     a.addEventListener("ended", () => {
       const next = (currentIdxRef.current ?? idx) + 1;
       if (next < segs.length) playWordSyncFrom(next);
       else { stopAudio(); toast.success("تمّت تلاوة السورة"); }
-    });
-    a.addEventListener("playing", () => setPlaying(true));
-    a.addEventListener("pause", () => setPlaying(false));
-    a.addEventListener("error", () => { toast.error("تعذر تشغيل التلاوة"); stopAudio(); });
+    }, opts);
+    a.addEventListener("playing", () => setPlaying(true), opts);
+    a.addEventListener("pause", () => setPlaying(false), opts);
+    a.addEventListener("error", () => { toast.error("تعذر تشغيل التلاوة"); stopAudio(); }, opts);
 
     requestAnimationFrame(() => {
       const ay = data.ayahs[idx];
@@ -173,10 +186,14 @@ function SurahPage() {
     const rec = getReciter(reciter);
     const ayah = data.ayahs[idx];
     const url = ayahAudioUrl(rec, num, ayah.numberInSurah, ayah.number);
+    if (listenersAbortRef.current) listenersAbortRef.current.abort();
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = "";
     }
+    const ac = new AbortController();
+    listenersAbortRef.current = ac;
+    const opts = { signal: ac.signal } as AddEventListenerOptions;
     let a: HTMLAudioElement;
     if (preloadRef.current && preloadRef.current.src === url) {
       a = preloadRef.current;
@@ -202,7 +219,7 @@ function SurahPage() {
           preloadRef.current = p;
         }
       }
-    });
+    }, opts);
     a.addEventListener("ended", () => {
       const next = (currentIdxRef.current ?? idx) + 1;
       if (data && next < data.ayahs.length) {
@@ -211,10 +228,10 @@ function SurahPage() {
         stopAudio();
         toast.success("تمّت تلاوة السورة");
       }
-    });
-    a.addEventListener("playing", () => setPlaying(true));
-    a.addEventListener("pause", () => setPlaying(false));
-    a.addEventListener("error", () => { toast.error("تعذر تشغيل التلاوة"); stopAudio(); });
+    }, opts);
+    a.addEventListener("playing", () => setPlaying(true), opts);
+    a.addEventListener("pause", () => setPlaying(false), opts);
+    a.addEventListener("error", () => { toast.error("تعذر تشغيل التلاوة"); stopAudio(); }, opts);
 
     requestAnimationFrame(() => {
       const el = document.getElementById(`ayah-${ayah.numberInSurah}`);
