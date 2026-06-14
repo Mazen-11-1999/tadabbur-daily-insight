@@ -36,6 +36,8 @@ function SurahPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const currentIdxRef = useRef<number | null>(null);
   const wordSyncRef = useRef<AyahWordSync[] | null>(null);
+  // Preloaded next-ayah Audio element to remove the gap between ayahs.
+  const preloadRef = useRef<HTMLAudioElement | null>(null);
   // For full-surah audio: cumulative weighted boundaries (seconds) per ayah
   const boundariesRef = useRef<number[] | null>(null);
 
@@ -84,6 +86,11 @@ function SurahPage() {
       audioRef.current.src = "";
       audioRef.current = null;
     }
+    if (preloadRef.current) {
+      preloadRef.current.pause();
+      preloadRef.current.src = "";
+      preloadRef.current = null;
+    }
     boundariesRef.current = null;
     setPlaying(false);
     setCurrentIdx(null);
@@ -103,12 +110,21 @@ function SurahPage() {
     if (idx < 0 || idx >= segs.length) { stopAudio(); return; }
     const item = segs[idx];
     if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; }
-    const a = new Audio(item.audioUrl);
+    // Use preloaded audio if it matches the next ayah's URL
+    let a: HTMLAudioElement;
+    if (preloadRef.current && preloadRef.current.src === item.audioUrl) {
+      a = preloadRef.current;
+      preloadRef.current = null;
+    } else {
+      a = new Audio(item.audioUrl);
+      a.preload = "auto";
+    }
     audioRef.current = a;
     setCurrentIdx(idx);
     setProgress(0);
     setCurrentWord(0);
 
+    let preloaded = false;
     a.addEventListener("timeupdate", () => {
       if (a.duration > 0) setProgress(a.currentTime / a.duration);
       const tMs = a.currentTime * 1000;
@@ -122,6 +138,17 @@ function SurahPage() {
         if (tMs > s[3]) w = s[1]; // passed it — keep last
       }
       setCurrentWord(w);
+      // Preload next ayah once we're 40% through the current one
+      if (!preloaded && a.duration > 0 && a.currentTime / a.duration > 0.4) {
+        preloaded = true;
+        const segsNow = wordSyncRef.current;
+        const nextItem = segsNow?.[idx + 1];
+        if (nextItem) {
+          const p = new Audio(nextItem.audioUrl);
+          p.preload = "auto";
+          preloadRef.current = p;
+        }
+      }
     });
     a.addEventListener("ended", () => {
       const next = (currentIdxRef.current ?? idx) + 1;
@@ -150,13 +177,31 @@ function SurahPage() {
       audioRef.current.pause();
       audioRef.current.src = "";
     }
-    const a = new Audio(url);
+    let a: HTMLAudioElement;
+    if (preloadRef.current && preloadRef.current.src === url) {
+      a = preloadRef.current;
+      preloadRef.current = null;
+    } else {
+      a = new Audio(url);
+      a.preload = "auto";
+    }
     audioRef.current = a;
     setCurrentIdx(idx);
     setProgress(0);
 
+    let preloaded = false;
     a.addEventListener("timeupdate", () => {
       if (a.duration > 0) setProgress(a.currentTime / a.duration);
+      if (!preloaded && a.duration > 0 && a.currentTime / a.duration > 0.4) {
+        preloaded = true;
+        const nextAyah = data.ayahs[idx + 1];
+        if (nextAyah) {
+          const nextUrl = ayahAudioUrl(rec, num, nextAyah.numberInSurah, nextAyah.number);
+          const p = new Audio(nextUrl);
+          p.preload = "auto";
+          preloadRef.current = p;
+        }
+      }
     });
     a.addEventListener("ended", () => {
       const next = (currentIdxRef.current ?? idx) + 1;
