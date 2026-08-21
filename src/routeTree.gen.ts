@@ -9,15 +9,23 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TadabburRouteImport } from './routes/tadabbur'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as QuranRouteImport } from './routes/quran'
+import { Route as PrayerRouteImport } from './routes/prayer'
+import { Route as MemorizeRouteImport } from './routes/memorize'
 import { Route as KhatmahRouteImport } from './routes/khatmah'
 import { Route as FavoritesRouteImport } from './routes/favorites'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SurahSurahNumberRouteImport } from './routes/surah.$surahNumber'
 import { Route as ApiPublicHooksSendNotificationsRouteImport } from './routes/api/public/hooks/send-notifications'
 
+const TadabburRoute = TadabburRouteImport.update({
+  id: '/tadabbur',
+  path: '/tadabbur',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -31,6 +39,16 @@ const SearchRoute = SearchRouteImport.update({
 const QuranRoute = QuranRouteImport.update({
   id: '/quran',
   path: '/quran',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrayerRoute = PrayerRouteImport.update({
+  id: '/prayer',
+  path: '/prayer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MemorizeRoute = MemorizeRouteImport.update({
+  id: '/memorize',
+  path: '/memorize',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KhatmahRoute = KhatmahRouteImport.update({
@@ -64,9 +82,12 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/favorites': typeof FavoritesRoute
   '/khatmah': typeof KhatmahRoute
+  '/memorize': typeof MemorizeRoute
+  '/prayer': typeof PrayerRoute
   '/quran': typeof QuranRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
+  '/tadabbur': typeof TadabburRoute
   '/surah/$surahNumber': typeof SurahSurahNumberRoute
   '/api/public/hooks/send-notifications': typeof ApiPublicHooksSendNotificationsRoute
 }
@@ -74,9 +95,12 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/favorites': typeof FavoritesRoute
   '/khatmah': typeof KhatmahRoute
+  '/memorize': typeof MemorizeRoute
+  '/prayer': typeof PrayerRoute
   '/quran': typeof QuranRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
+  '/tadabbur': typeof TadabburRoute
   '/surah/$surahNumber': typeof SurahSurahNumberRoute
   '/api/public/hooks/send-notifications': typeof ApiPublicHooksSendNotificationsRoute
 }
@@ -85,9 +109,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/favorites': typeof FavoritesRoute
   '/khatmah': typeof KhatmahRoute
+  '/memorize': typeof MemorizeRoute
+  '/prayer': typeof PrayerRoute
   '/quran': typeof QuranRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
+  '/tadabbur': typeof TadabburRoute
   '/surah/$surahNumber': typeof SurahSurahNumberRoute
   '/api/public/hooks/send-notifications': typeof ApiPublicHooksSendNotificationsRoute
 }
@@ -97,9 +124,12 @@ export interface FileRouteTypes {
     | '/'
     | '/favorites'
     | '/khatmah'
+    | '/memorize'
+    | '/prayer'
     | '/quran'
     | '/search'
     | '/settings'
+    | '/tadabbur'
     | '/surah/$surahNumber'
     | '/api/public/hooks/send-notifications'
   fileRoutesByTo: FileRoutesByTo
@@ -107,9 +137,12 @@ export interface FileRouteTypes {
     | '/'
     | '/favorites'
     | '/khatmah'
+    | '/memorize'
+    | '/prayer'
     | '/quran'
     | '/search'
     | '/settings'
+    | '/tadabbur'
     | '/surah/$surahNumber'
     | '/api/public/hooks/send-notifications'
   id:
@@ -117,9 +150,12 @@ export interface FileRouteTypes {
     | '/'
     | '/favorites'
     | '/khatmah'
+    | '/memorize'
+    | '/prayer'
     | '/quran'
     | '/search'
     | '/settings'
+    | '/tadabbur'
     | '/surah/$surahNumber'
     | '/api/public/hooks/send-notifications'
   fileRoutesById: FileRoutesById
@@ -128,15 +164,25 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   FavoritesRoute: typeof FavoritesRoute
   KhatmahRoute: typeof KhatmahRoute
+  MemorizeRoute: typeof MemorizeRoute
+  PrayerRoute: typeof PrayerRoute
   QuranRoute: typeof QuranRoute
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
+  TadabburRoute: typeof TadabburRoute
   SurahSurahNumberRoute: typeof SurahSurahNumberRoute
   ApiPublicHooksSendNotificationsRoute: typeof ApiPublicHooksSendNotificationsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/tadabbur': {
+      id: '/tadabbur'
+      path: '/tadabbur'
+      fullPath: '/tadabbur'
+      preLoaderRoute: typeof TadabburRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -156,6 +202,20 @@ declare module '@tanstack/react-router' {
       path: '/quran'
       fullPath: '/quran'
       preLoaderRoute: typeof QuranRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/prayer': {
+      id: '/prayer'
+      path: '/prayer'
+      fullPath: '/prayer'
+      preLoaderRoute: typeof PrayerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/memorize': {
+      id: '/memorize'
+      path: '/memorize'
+      fullPath: '/memorize'
+      preLoaderRoute: typeof MemorizeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/khatmah': {
@@ -200,12 +260,24 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   FavoritesRoute: FavoritesRoute,
   KhatmahRoute: KhatmahRoute,
+  MemorizeRoute: MemorizeRoute,
+  PrayerRoute: PrayerRoute,
   QuranRoute: QuranRoute,
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
+  TadabburRoute: TadabburRoute,
   SurahSurahNumberRoute: SurahSurahNumberRoute,
   ApiPublicHooksSendNotificationsRoute: ApiPublicHooksSendNotificationsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
