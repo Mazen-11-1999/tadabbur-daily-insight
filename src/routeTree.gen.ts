@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TadabburRouteImport } from './routes/tadabbur'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as QuranRouteImport } from './routes/quran'
@@ -18,6 +19,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SurahSurahNumberRouteImport } from './routes/surah.$surahNumber'
 import { Route as ApiPublicHooksSendNotificationsRouteImport } from './routes/api/public/hooks/send-notifications'
 
+const TadabburRoute = TadabburRouteImport.update({
+  id: '/tadabbur',
+  path: '/tadabbur',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -67,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/quran': typeof QuranRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
+  '/tadabbur': typeof TadabburRoute
   '/surah/$surahNumber': typeof SurahSurahNumberRoute
   '/api/public/hooks/send-notifications': typeof ApiPublicHooksSendNotificationsRoute
 }
@@ -77,6 +84,7 @@ export interface FileRoutesByTo {
   '/quran': typeof QuranRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
+  '/tadabbur': typeof TadabburRoute
   '/surah/$surahNumber': typeof SurahSurahNumberRoute
   '/api/public/hooks/send-notifications': typeof ApiPublicHooksSendNotificationsRoute
 }
@@ -88,6 +96,7 @@ export interface FileRoutesById {
   '/quran': typeof QuranRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
+  '/tadabbur': typeof TadabburRoute
   '/surah/$surahNumber': typeof SurahSurahNumberRoute
   '/api/public/hooks/send-notifications': typeof ApiPublicHooksSendNotificationsRoute
 }
@@ -100,6 +109,7 @@ export interface FileRouteTypes {
     | '/quran'
     | '/search'
     | '/settings'
+    | '/tadabbur'
     | '/surah/$surahNumber'
     | '/api/public/hooks/send-notifications'
   fileRoutesByTo: FileRoutesByTo
@@ -110,6 +120,7 @@ export interface FileRouteTypes {
     | '/quran'
     | '/search'
     | '/settings'
+    | '/tadabbur'
     | '/surah/$surahNumber'
     | '/api/public/hooks/send-notifications'
   id:
@@ -120,6 +131,7 @@ export interface FileRouteTypes {
     | '/quran'
     | '/search'
     | '/settings'
+    | '/tadabbur'
     | '/surah/$surahNumber'
     | '/api/public/hooks/send-notifications'
   fileRoutesById: FileRoutesById
@@ -131,12 +143,20 @@ export interface RootRouteChildren {
   QuranRoute: typeof QuranRoute
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
+  TadabburRoute: typeof TadabburRoute
   SurahSurahNumberRoute: typeof SurahSurahNumberRoute
   ApiPublicHooksSendNotificationsRoute: typeof ApiPublicHooksSendNotificationsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/tadabbur': {
+      id: '/tadabbur'
+      path: '/tadabbur'
+      fullPath: '/tadabbur'
+      preLoaderRoute: typeof TadabburRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -203,6 +223,7 @@ const rootRouteChildren: RootRouteChildren = {
   QuranRoute: QuranRoute,
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
+  TadabburRoute: TadabburRoute,
   SurahSurahNumberRoute: SurahSurahNumberRoute,
   ApiPublicHooksSendNotificationsRoute: ApiPublicHooksSendNotificationsRoute,
 }
