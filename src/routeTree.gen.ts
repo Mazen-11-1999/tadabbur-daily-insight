@@ -13,6 +13,7 @@ import { Route as TadabburRouteImport } from './routes/tadabbur'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as QuranRouteImport } from './routes/quran'
+import { Route as PrayerRouteImport } from './routes/prayer'
 import { Route as MemorizeRouteImport } from './routes/memorize'
 import { Route as KhatmahRouteImport } from './routes/khatmah'
 import { Route as FavoritesRouteImport } from './routes/favorites'
@@ -38,6 +39,11 @@ const SearchRoute = SearchRouteImport.update({
 const QuranRoute = QuranRouteImport.update({
   id: '/quran',
   path: '/quran',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrayerRoute = PrayerRouteImport.update({
+  id: '/prayer',
+  path: '/prayer',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MemorizeRoute = MemorizeRouteImport.update({
@@ -77,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/favorites': typeof FavoritesRoute
   '/khatmah': typeof KhatmahRoute
   '/memorize': typeof MemorizeRoute
+  '/prayer': typeof PrayerRoute
   '/quran': typeof QuranRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByTo {
   '/favorites': typeof FavoritesRoute
   '/khatmah': typeof KhatmahRoute
   '/memorize': typeof MemorizeRoute
+  '/prayer': typeof PrayerRoute
   '/quran': typeof QuranRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
@@ -102,6 +110,7 @@ export interface FileRoutesById {
   '/favorites': typeof FavoritesRoute
   '/khatmah': typeof KhatmahRoute
   '/memorize': typeof MemorizeRoute
+  '/prayer': typeof PrayerRoute
   '/quran': typeof QuranRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
@@ -116,6 +125,7 @@ export interface FileRouteTypes {
     | '/favorites'
     | '/khatmah'
     | '/memorize'
+    | '/prayer'
     | '/quran'
     | '/search'
     | '/settings'
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/favorites'
     | '/khatmah'
     | '/memorize'
+    | '/prayer'
     | '/quran'
     | '/search'
     | '/settings'
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/favorites'
     | '/khatmah'
     | '/memorize'
+    | '/prayer'
     | '/quran'
     | '/search'
     | '/settings'
@@ -153,6 +165,7 @@ export interface RootRouteChildren {
   FavoritesRoute: typeof FavoritesRoute
   KhatmahRoute: typeof KhatmahRoute
   MemorizeRoute: typeof MemorizeRoute
+  PrayerRoute: typeof PrayerRoute
   QuranRoute: typeof QuranRoute
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
@@ -189,6 +202,13 @@ declare module '@tanstack/react-router' {
       path: '/quran'
       fullPath: '/quran'
       preLoaderRoute: typeof QuranRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/prayer': {
+      id: '/prayer'
+      path: '/prayer'
+      fullPath: '/prayer'
+      preLoaderRoute: typeof PrayerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/memorize': {
@@ -241,6 +261,7 @@ const rootRouteChildren: RootRouteChildren = {
   FavoritesRoute: FavoritesRoute,
   KhatmahRoute: KhatmahRoute,
   MemorizeRoute: MemorizeRoute,
+  PrayerRoute: PrayerRoute,
   QuranRoute: QuranRoute,
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
