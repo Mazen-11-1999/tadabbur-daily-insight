@@ -62,6 +62,54 @@ export type Database = {
         }
         Relationships: []
       }
+      memorization_items: {
+        Row: {
+          arabic: string
+          ayah_number: number
+          created_at: string
+          due_date: string
+          ease: number
+          id: string
+          interval_days: number
+          last_reviewed_at: string | null
+          repetitions: number
+          surah_name: string
+          surah_number: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          arabic?: string
+          ayah_number: number
+          created_at?: string
+          due_date?: string
+          ease?: number
+          id?: string
+          interval_days?: number
+          last_reviewed_at?: string | null
+          repetitions?: number
+          surah_name?: string
+          surah_number: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          arabic?: string
+          ayah_number?: number
+          created_at?: string
+          due_date?: string
+          ease?: number
+          id?: string
+          interval_days?: number
+          last_reviewed_at?: string | null
+          repetitions?: number
+          surah_name?: string
+          surah_number?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notes: {
         Row: {
           ayah_number: number
