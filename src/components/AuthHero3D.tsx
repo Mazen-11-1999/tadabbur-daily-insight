@@ -21,11 +21,50 @@ export function AuthHero3D({
   title?: string;
   subtitle?: string;
 }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [sent, setSent] = useState(false);
+
   const handleSignIn = async () => {
     const r = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: typeof window !== "undefined" ? window.location.origin : undefined,
     });
     if (r.error) toast.error("تعذر تسجيل الدخول");
+  };
+
+  const emailSignIn = async () => {
+    if (!email || !password) return toast.error("أدخل البريد وكلمة المرور");
+    setBusy(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setBusy(false);
+    if (error) toast.error("بيانات الدخول غير صحيحة");
+    else toast.success("مرحباً بك، تمت مزامنة حسابك");
+  };
+
+  const emailSignUp = async () => {
+    if (!email || password.length < 6) return toast.error("كلمة المرور ٦ أحرف على الأقل");
+    setBusy(true);
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: window.location.origin },
+    });
+    setBusy(false);
+    if (error) return toast.error(error.message.includes("registered") ? "هذا البريد مسجّل مسبقاً" : "تعذّر إنشاء الحساب");
+    if (!data.session) {
+      setSent(true);
+      toast.success("أرسلنا رسالة تأكيد إلى بريدك");
+    }
+  };
+
+  const resetPassword = async () => {
+    if (!email) return toast.error("أدخل بريدك أولاً");
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) toast.error("تعذّر إرسال رابط الاستعادة");
+    else toast.success("تحقّق من بريدك لاستعادة كلمة المرور");
   };
 
   return (
