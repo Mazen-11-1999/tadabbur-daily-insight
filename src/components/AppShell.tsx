@@ -1,14 +1,18 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { BookOpen, Sparkles, Heart, Settings, BookMarked, WifiOff, Search as SearchIcon, Target } from "lucide-react";
+import { BookOpen, Sparkles, Heart, Settings, BookMarked, WifiOff, Search as SearchIcon, Target, Brain, Moon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 const NAV = [
   { to: "/", label: "آية اليوم", icon: Sparkles },
   { to: "/quran", label: "المصحف", icon: BookOpen },
+  { to: "/tadabbur", label: "معين التدبر", icon: Sparkles },
+  { to: "/memorize", label: "الحفظ", icon: Brain },
+  { to: "/prayer", label: "الصلاة", icon: Moon },
   { to: "/khatmah", label: "الختمة", icon: Target },
   { to: "/favorites", label: "المفضلة", icon: Heart },
   { to: "/settings", label: "الإعدادات", icon: Settings },
 ] as const;
+
 
 export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
@@ -70,14 +74,14 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Bottom nav (mobile) */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 backdrop-blur-xl bg-background/85 border-t border-border/50">
-        <div className="mx-auto max-w-3xl grid grid-cols-5">
+        <div className="mx-auto max-w-3xl flex overflow-x-auto no-scrollbar">
           {NAV.map(({ to, label, icon: Icon }) => {
             const active = location.pathname === to;
             return (
               <Link
                 key={to}
                 to={to}
-                className={`flex flex-col items-center gap-1 py-3 text-xs transition-colors ${
+                className={`shrink-0 basis-1/5 flex flex-col items-center gap-1 py-3 text-[11px] transition-colors ${
                   active ? "text-gold" : "text-muted-foreground"
                 }`}
               >
@@ -86,6 +90,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             );
           })}
+
         </div>
       </nav>
     </div>

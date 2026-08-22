@@ -321,3 +321,8 @@
 @media (prefers-reduced-motion: reduce) {
   .islamic-star, .orbit, .brand-3d, .auth-hero__glow { animation: none !important; }
 }
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}

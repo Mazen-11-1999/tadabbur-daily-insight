@@ -19,7 +19,7 @@ export const Route = createFileRoute("/prayer")({
   component: PrayerPage,
 });
 
-const ADHAN_URL = "https://cdn.islamic.network/adhans/128/ahmadnafees.mp3";
+const ADHAN_URL = "https://cdn.aladhan.com/audio/adhans/a1.mp3";
 
 const PRAYERS = [
   { key: "Fajr", label: "الفجر", icon: Sunrise },
