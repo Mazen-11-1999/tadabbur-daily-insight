@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TadabburRouteImport } from './routes/tadabbur'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SearchRouteImport } from './routes/search'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as QuranRouteImport } from './routes/quran'
 import { Route as PrayerRouteImport } from './routes/prayer'
 import { Route as MemorizeRouteImport } from './routes/memorize'
@@ -35,6 +36,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const QuranRoute = QuranRouteImport.update({
@@ -92,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/memorize': typeof MemorizeRoute
   '/prayer': typeof PrayerRoute
   '/quran': typeof QuranRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/tadabbur': typeof TadabburRoute
@@ -106,6 +113,7 @@ export interface FileRoutesByTo {
   '/memorize': typeof MemorizeRoute
   '/prayer': typeof PrayerRoute
   '/quran': typeof QuranRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/tadabbur': typeof TadabburRoute
@@ -121,6 +129,7 @@ export interface FileRoutesById {
   '/memorize': typeof MemorizeRoute
   '/prayer': typeof PrayerRoute
   '/quran': typeof QuranRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/tadabbur': typeof TadabburRoute
@@ -137,6 +146,7 @@ export interface FileRouteTypes {
     | '/memorize'
     | '/prayer'
     | '/quran'
+    | '/reset-password'
     | '/search'
     | '/settings'
     | '/tadabbur'
@@ -151,6 +161,7 @@ export interface FileRouteTypes {
     | '/memorize'
     | '/prayer'
     | '/quran'
+    | '/reset-password'
     | '/search'
     | '/settings'
     | '/tadabbur'
@@ -165,6 +176,7 @@ export interface FileRouteTypes {
     | '/memorize'
     | '/prayer'
     | '/quran'
+    | '/reset-password'
     | '/search'
     | '/settings'
     | '/tadabbur'
@@ -180,6 +192,7 @@ export interface RootRouteChildren {
   MemorizeRoute: typeof MemorizeRoute
   PrayerRoute: typeof PrayerRoute
   QuranRoute: typeof QuranRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
   TadabburRoute: typeof TadabburRoute
@@ -208,6 +221,13 @@ declare module '@tanstack/react-router' {
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/quran': {
@@ -284,6 +304,7 @@ const rootRouteChildren: RootRouteChildren = {
   MemorizeRoute: MemorizeRoute,
   PrayerRoute: PrayerRoute,
   QuranRoute: QuranRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
   TadabburRoute: TadabburRoute,
