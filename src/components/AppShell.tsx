@@ -74,14 +74,14 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Bottom nav (mobile) */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 backdrop-blur-xl bg-background/85 border-t border-border/50">
-        <div className="mx-auto max-w-3xl grid grid-cols-5">
+        <div className="mx-auto max-w-3xl flex overflow-x-auto no-scrollbar">
           {NAV.map(({ to, label, icon: Icon }) => {
             const active = location.pathname === to;
             return (
               <Link
                 key={to}
                 to={to}
-                className={`flex flex-col items-center gap-1 py-3 text-xs transition-colors ${
+                className={`shrink-0 basis-1/5 flex flex-col items-center gap-1 py-3 text-[11px] transition-colors ${
                   active ? "text-gold" : "text-muted-foreground"
                 }`}
               >
@@ -90,6 +90,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             );
           })}
+
         </div>
       </nav>
     </div>
