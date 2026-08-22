@@ -142,7 +142,58 @@ export function AuthHero3D({
           <LogIn className="w-4 h-4 ml-2" />
           الدخول بـ Google
         </Button>
-        <p className="mt-3 text-[11px] text-muted-foreground">
+
+        <div className="flex items-center gap-3 my-5 max-w-sm mx-auto">
+          <span className="h-px flex-1 bg-border/60" />
+          <span className="text-[11px] text-muted-foreground">أو بالبريد الإلكتروني</span>
+          <span className="h-px flex-1 bg-border/60" />
+        </div>
+
+        {sent ? (
+          <div className="max-w-sm mx-auto rounded-2xl border border-gold/30 bg-card/60 p-5 text-center">
+            <Mail className="w-6 h-6 text-gold mx-auto mb-2" />
+            <p className="text-sm">أرسلنا رابط تأكيد إلى <span className="font-bold">{email}</span>. افتحه لتفعيل حسابك ثم عُد للدخول.</p>
+          </div>
+        ) : (
+          <Tabs defaultValue="signin" className="max-w-sm mx-auto text-right" dir="rtl">
+            <TabsList className="grid grid-cols-2 w-full">
+              <TabsTrigger value="signin">دخول</TabsTrigger>
+              <TabsTrigger value="signup">حساب جديد</TabsTrigger>
+            </TabsList>
+            <div className="space-y-3 mt-4">
+              <Input
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                placeholder="البريد الإلكتروني"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <Input
+                type="password"
+                autoComplete="current-password"
+                placeholder="كلمة المرور"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            <TabsContent value="signin" className="mt-3 space-y-2">
+              <Button onClick={emailSignIn} disabled={busy} className="w-full">
+                {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : "تسجيل الدخول"}
+              </Button>
+              <button type="button" onClick={resetPassword} className="text-[11px] text-muted-foreground underline">
+                نسيت كلمة المرور؟
+              </button>
+            </TabsContent>
+            <TabsContent value="signup" className="mt-3">
+              <Button onClick={emailSignUp} disabled={busy} className="w-full">
+                {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : "إنشاء حساب ومزامنة أجهزتي"}
+              </Button>
+            </TabsContent>
+          </Tabs>
+        )}
+
+        <p className="mt-4 text-[11px] text-muted-foreground">
           ﴿ أَفَلَا يَتَدَبَّرُونَ الْقُرْآنَ ﴾
         </p>
       </div>
