@@ -1,14 +1,18 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { BookOpen, Sparkles, Heart, Settings, BookMarked, WifiOff, Search as SearchIcon, Target } from "lucide-react";
+import { BookOpen, Sparkles, Heart, Settings, BookMarked, WifiOff, Search as SearchIcon, Target, Brain, Moon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 const NAV = [
   { to: "/", label: "آية اليوم", icon: Sparkles },
   { to: "/quran", label: "المصحف", icon: BookOpen },
+  { to: "/tadabbur", label: "معين التدبر", icon: Sparkles },
+  { to: "/memorize", label: "الحفظ", icon: Brain },
+  { to: "/prayer", label: "الصلاة", icon: Moon },
   { to: "/khatmah", label: "الختمة", icon: Target },
   { to: "/favorites", label: "المفضلة", icon: Heart },
   { to: "/settings", label: "الإعدادات", icon: Settings },
 ] as const;
+
 
 export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
