@@ -1,6 +1,11 @@
 // Quran data via AlQuran.cloud API (free, no key required)
 // Docs: https://alquran.cloud/api
-import { get, set } from 'idb-keyval';
+import { z } from "zod";
+import { fetchJson } from "./reliable-fetch";
+import { cachedQuran } from "./quran-cache";
+import { localDateKey, normalizeArabic, stripOpeningBasmala } from "./quran-display";
+export { fetchJson } from "./reliable-fetch";
+export { localDateKey, normalizeArabic, stripOpeningBasmala } from "./quran-display";
 
 const BASE = "https://api.alquran.cloud/v1";
 
@@ -107,103 +112,113 @@ export interface AyahWordSync {
   segments: number[][];
 }
 
-const _wordSyncCache = new Map<string, AyahWordSync[]>();
-export async function getChapterWordSync(quranComId: number, chapter: number): Promise<AyahWordSync[]> {
-  const key = `${quranComId}:${chapter}`;
-  const cached = _wordSyncCache.get(key);
-  if (cached) return cached;
-  const res = await fetch(
-    `https://api.quran.com/api/v4/recitations/${quranComId}/by_chapter/${chapter}?per_page=300&fields=segments`,
-  );
-  const j = await res.json();
-  const out: AyahWordSync[] = (j.audio_files ?? []).map((f: { verse_key: string; url: string; segments: number[][] }) => ({
-    verseKey: f.verse_key,
-    numberInSurah: Number(f.verse_key.split(":")[1]),
-    audioUrl: f.url.startsWith("http") ? f.url : `https://verses.quran.com/${f.url}`,
-    segments: f.segments ?? [],
-  }));
-  _wordSyncCache.set(key, out);
-  return out;
-}
+const metaSchema = z.object({
+  number: z.number().int().min(1).max(114), name: z.string().min(1), englishName: z.string().min(1),
+  englishNameTranslation: z.string(), numberOfAyahs: z.number().int().positive(), revelationType: z.enum(["Meccan", "Medinan"]),
+});
+const verseSchema = z.object({ number: z.number().int().positive(), text: z.string().min(1), numberInSurah: z.number().int().positive(), juz: z.number().int().min(1).max(30), page: z.number().int().min(1).max(604) });
+export type SurahData = SurahMeta & { ayahs: AyahData[] };
+export type TafsirSurah = SurahMeta & { ayahs: (AyahData & { tafsir: string })[] };
 
-let _surahsCache: SurahMeta[] | null = null;
-export async function getSurahs(): Promise<SurahMeta[]> {
-  if (_surahsCache) return _surahsCache;
-  const res = await fetch(`${BASE}/surah`);
-  const j = await res.json();
-  _surahsCache = j.data as SurahMeta[];
-  return _surahsCache;
-}
-
-export async function getSurahWithAyahs(surahNumber: number, edition = "quran-uthmani") {
-  const res = await fetch(`${BASE}/surah/${surahNumber}/${edition}`);
-  const j = await res.json();
-  return j.data as SurahMeta & { ayahs: AyahData[] };
-}
-
-/**
- * Fetch a full surah with arabic text + tafsir for every ayah in one request.
- */
-export async function getSurahWithTafsir(surahNumber: number, tafsirEdition = "ar.muyassar") {
-  const res = await fetch(`${BASE}/surah/${surahNumber}/editions/quran-uthmani,${tafsirEdition}`);
-  const j = await res.json();
-  if (!j.data || !Array.isArray(j.data)) throw new Error("تعذر تحميل السورة");
-  const arabic = j.data[0] as SurahMeta & { ayahs: AyahData[] };
-  const tafsir = j.data[1] as SurahMeta & { ayahs: AyahData[] };
-  const tafsirMap = new Map<number, string>();
-  tafsir.ayahs.forEach((a) => tafsirMap.set(a.numberInSurah, a.text));
-  return {
-    ...arabic,
-    ayahs: arabic.ayahs.map((a) => ({ ...a, tafsir: tafsirMap.get(a.numberInSurah) ?? "" })),
-  };
-}
-
-/**
- * Fetch a single ayah with arabic + tafsir + audio in one shot
- * using the multi-edition endpoint.
- */
-export async function getAyah(
-  surah: number,
-  ayah: number,
-  tafsirEdition = "ar.muyassar",
-  reciterEdition = "ar.alafasy",
-): Promise<CombinedAyah> {
-  const ref = `${surah}:${ayah}`;
-  // Daily ayah needs per-ayah audio. If the selected reciter is a full-surah-only one,
-  // fall back to Alafasy for the single-ayah preview.
-  const safeReciter = reciterEdition.startsWith("ar.") ? reciterEdition : "ar.alafasy";
-  const editions = `quran-uthmani,${tafsirEdition},${safeReciter}`;
-  const mainRes = await fetch(`${BASE}/ayah/${ref}/editions/${editions}`).then((r) => r.json());
-
-  if (!mainRes.data || !Array.isArray(mainRes.data)) {
-    throw new Error("لم نتمكن من جلب الآية");
+export function validateSurah(value: unknown, number: number): SurahData {
+  const parsed = metaSchema.extend({ ayahs: z.array(verseSchema) }).parse(value);
+  const expected = SURAH_AYAH_COUNTS[number - 1];
+  if (!expected || parsed.number !== number || parsed.numberOfAyahs !== expected || parsed.ayahs.length !== expected ||
+    parsed.ayahs.some((ayah, index) => ayah.numberInSurah !== index + 1 || ayah.number !== refToGlobalNumber(number, index + 1))) {
+    throw new Error("عدد آيات السورة أو ترتيبها غير صحيح. أعد المحاولة.");
   }
-  const arabicData = mainRes.data[0] as AyahData;
-  const tafsirData = mainRes.data[1] as AyahData;
-  const audioData = mainRes.data[2] as AyahData & { audio?: string };
-  const tafsirText = tafsirData.text;
-
-  return {
-    arabic: arabicData.text,
-    tafsir: tafsirText,
-    audioUrl: (audioData as { audio?: string }).audio || `https://cdn.islamic.network/quran/audio/128/${safeReciter}/${arabicData.number}.mp3`,
-    surah: arabicData.surah,
-    numberInSurah: arabicData.numberInSurah,
-    globalNumber: arabicData.number,
-  };
+  return { ...parsed, ayahs: parsed.ayahs.map((ayah) => ({ ...ayah, surah: parsed })) };
+}
+function parseSurahs(value: unknown): SurahMeta[] {
+  const result = z.array(metaSchema).length(114).parse(value);
+  if (result.some((s, index) => s.number !== index + 1 || s.numberOfAyahs !== SURAH_AYAH_COUNTS[index])) throw new Error("قائمة السور غير مكتملة");
+  return result;
+}
+function validateRef(surah: number, ayah = 1) {
+  const count = SURAH_AYAH_COUNTS[surah - 1];
+  if (!Number.isInteger(surah) || !Number.isInteger(ayah) || !count || ayah < 1 || ayah > count) throw new Error("رقم السورة أو الآية غير صالح.");
 }
 
-/**
- * Pick a deterministic "ayah of the day" based on date.
- * Uses YYYY-MM-DD seed -> stable ayah within 1..6236.
- */
-export function getDailyAyahRef(date = new Date()): { surah: number; ayah: number; globalNumber: number } {
-  const seed = `${date.getUTCFullYear()}-${date.getUTCMonth()}-${date.getUTCDate()}`;
+export async function getChapterWordSync(quranComId: number, chapter: number): Promise<AyahWordSync[]> {
+  const parse = (value: unknown) => z.array(z.object({ verseKey: z.string(), numberInSurah: z.number(), audioUrl: z.string().url(), segments: z.array(z.array(z.number())) })).parse(value);
+  return cachedQuran(`sync:${quranComId}:${chapter}`, async () => {
+    const json = await fetchJson(`https://api.quran.com/api/v4/recitations/${quranComId}/by_chapter/${chapter}?per_page=300&fields=segments`,
+      (value) => z.object({ audio_files: z.array(z.object({ verse_key: z.string(), url: z.string().min(1), segments: z.array(z.array(z.number())).default([]) })) }).parse(value), false);
+    const items = json.audio_files.map((file) => ({ verseKey: file.verse_key, numberInSurah: Number(file.verse_key.split(":")[1]), audioUrl: file.url.startsWith("https:") ? file.url : `https://verses.quran.com/${file.url}`, segments: file.segments }));
+    if (items.length !== SURAH_AYAH_COUNTS[chapter - 1]) throw new Error("توقيت التلاوة غير مكتمل");
+    return items;
+  }, parse);
+}
+
+export async function getSurahs(): Promise<SurahMeta[]> {
+  return cachedQuran("surahs", async () => {
+    try { return await fetchJson(`${BASE}/surah`, parseSurahs); }
+    catch {
+      const json = await fetchJson("https://api.quran.com/api/v4/chapters?language=ar", (value) => z.object({ chapters: z.array(z.object({ id: z.number(), name_arabic: z.string(), name_simple: z.string(), translated_name: z.object({ name: z.string() }), verses_count: z.number(), revelation_place: z.enum(["makkah", "madinah"]) })) }).parse(value), false);
+      return parseSurahs(json.chapters.map((c) => ({ number: c.id, name: c.name_arabic, englishName: c.name_simple, englishNameTranslation: c.translated_name.name, numberOfAyahs: c.verses_count, revelationType: c.revelation_place === "makkah" ? "Meccan" : "Medinan" })));
+    }
+  }, parseSurahs);
+}
+async function secondarySurah(number: number): Promise<SurahData> {
+  const [surahs, json] = await Promise.all([getSurahs(), fetchJson(`https://api.quran.com/api/v4/verses/by_chapter/${number}?language=ar&words=false&fields=text_uthmani&per_page=300`,
+    (value) => z.object({ verses: z.array(z.object({ verse_number: z.number(), text_uthmani: z.string().min(1), page_number: z.number(), juz_number: z.number() })) }).parse(value), false)]);
+  const meta = surahs.find((s) => s.number === number);
+  if (!meta) throw new Error("السورة غير موجودة");
+  return validateSurah({ ...meta, ayahs: json.verses.map((a) => ({ number: refToGlobalNumber(number, a.verse_number), numberInSurah: a.verse_number, text: a.text_uthmani, page: a.page_number, juz: a.juz_number })) }, number);
+}
+export async function getSurahWithAyahs(surahNumber: number, edition = "quran-uthmani"): Promise<SurahData> {
+  validateRef(surahNumber);
+  return cachedQuran(`surah:${surahNumber}:${edition}`, async () => {
+    let result: SurahData;
+    try { result = await fetchJson(`${BASE}/surah/${surahNumber}/${edition}`, (value) => validateSurah(value, surahNumber)); }
+    catch (error) {
+      if (!edition.startsWith("quran-")) throw error;
+      result = await secondarySurah(surahNumber);
+    }
+    return { ...result, ayahs: result.ayahs.map((a) => ({ ...a, text: edition.startsWith("quran-") ? stripOpeningBasmala(a.text, surahNumber, a.numberInSurah) : a.text })) };
+  }, (value) => validateSurah(value, surahNumber));
+}
+export async function getSurahWithTafsir(surahNumber: number, tafsirEdition = "ar.muyassar"): Promise<TafsirSurah> {
+  const parse = (value: unknown): TafsirSurah => {
+    const arabic = validateSurah(value, surahNumber);
+    const tafsirs = z.object({ ayahs: z.array(z.object({ tafsir: z.string().min(1) })) }).parse(value);
+    return { ...arabic, ayahs: arabic.ayahs.map((a, index) => ({ ...a, tafsir: tafsirs.ayahs[index].tafsir })) };
+  };
+  return cachedQuran(`tafsir:${surahNumber}:${tafsirEdition}`, async () => {
+    const [arabic, tafsir] = await Promise.all([getSurahWithAyahs(surahNumber), getSurahWithAyahs(surahNumber, tafsirEdition)]);
+    return { ...arabic, ayahs: arabic.ayahs.map((a, index) => ({ ...a, tafsir: tafsir.ayahs[index].text })) };
+  }, parse);
+}
+const arabicAyahSchema = verseSchema.extend({ surah: metaSchema });
+export async function getArabicAyah(surah: number, ayah: number): Promise<AyahData> {
+  validateRef(surah, ayah);
+  const parse = (value: unknown) => {
+    const data = arabicAyahSchema.parse(value);
+    if (data.surah.number !== surah || data.numberInSurah !== ayah || data.number !== refToGlobalNumber(surah, ayah)) throw new Error("الآية المستلمة غير مطابقة");
+    return { ...data, text: stripOpeningBasmala(data.text, surah, ayah) };
+  };
+  return cachedQuran(`ayah-text:${surah}:${ayah}`, async () => {
+    try { return await fetchJson(`${BASE}/ayah/${surah}:${ayah}/quran-uthmani`, parse); }
+    catch { const chapter = await getSurahWithAyahs(surah); return parse(chapter.ayahs[ayah - 1]); }
+  }, parse);
+}
+export async function getAyah(surah: number, ayah: number, tafsirEdition = "ar.muyassar", reciterEdition = "ar.alafasy"): Promise<CombinedAyah> {
+  validateRef(surah, ayah);
+  const parse = (value: unknown) => z.object({ arabic: z.string().min(1), tafsir: z.string().min(1), audioUrl: z.string().url(), surah: metaSchema, numberInSurah: z.number(), globalNumber: z.number() }).parse(value);
+  return cachedQuran(`ayah:${surah}:${ayah}:${tafsirEdition}:${reciterEdition}`, async () => {
+    const [arabic, tafsir] = await Promise.all([getArabicAyah(surah, ayah), fetchJson(`${BASE}/ayah/${surah}:${ayah}/${tafsirEdition}`, (value) => arabicAyahSchema.parse(value))]);
+    return { arabic: arabic.text, tafsir: tafsir.text, audioUrl: ayahAudioUrl(getReciter(reciterEdition), surah, ayah, arabic.number), surah: arabic.surah, numberInSurah: ayah, globalNumber: arabic.number };
+  }, parse);
+}
+
+/** The exact same date seed is shared by device UI and subscriber-local notifications. */
+export function getDailyAyahRef(date: Date | string = new Date()): { surah: number; ayah: number; globalNumber: number } {
+  const day = typeof date === "string" ? date : localDateKey(date);
+  const [year, month, dateOfMonth] = day.split("-").map(Number);
+  const seed = `${year}-${month - 1}-${dateOfMonth}`;
   let h = 0;
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-  const TOTAL = 6236;
-  const globalNumber = (h % TOTAL) + 1;
-  return globalNumberToRef(globalNumber);
+  return globalNumberToRef((h % 6236) + 1);
 }
 
 // Cumulative ayah counts per surah (1..114). Built once.
@@ -243,39 +258,48 @@ export interface SearchResult {
 }
 
 export async function getQuranSearchIndex(): Promise<SearchResult[]> {
-  const CACHE_KEY = "quran_search_index";
-  let index = await get(CACHE_KEY);
-  if (index) return index;
-
-  const [cleanRes, uthmaniRes] = await Promise.all([
-    fetch(`${BASE}/quran/quran-simple-clean`),
-    fetch(`${BASE}/quran/quran-uthmani`)
-  ]);
-  const cleanJson = await cleanRes.json();
-  const uthmaniJson = await uthmaniRes.json();
-
-  const ayahs: SearchResult[] = [];
-  for (let s = 0; s < cleanJson.data.surahs.length; s++) {
-    const cleanSurah = cleanJson.data.surahs[s];
-    const uthmaniSurah = uthmaniJson.data.surahs[s];
-    for (let a = 0; a < cleanSurah.ayahs.length; a++) {
-      ayahs.push({
-        surahNumber: cleanSurah.number,
-        surahName: cleanSurah.name,
-        ayahNumber: cleanSurah.ayahs[a].numberInSurah,
-        globalNumber: cleanSurah.ayahs[a].number,
-        cleanText: cleanSurah.ayahs[a].text,
-        uthmaniText: uthmaniSurah.ayahs[a].text,
+  const parseIndex = (value: unknown) => {
+    const items = z.array(z.object({ surahNumber: z.number(), surahName: z.string(), ayahNumber: z.number(), globalNumber: z.number(), cleanText: z.string().min(1), uthmaniText: z.string().min(1) })).length(6236).parse(value);
+    if (items.some((a, index) => a.globalNumber !== index + 1 || a.globalNumber !== refToGlobalNumber(a.surahNumber, a.ayahNumber))) throw new Error("فهرس البحث غير مكتمل");
+    return items.map((a) => ({ ...a, cleanText: stripOpeningBasmala(a.cleanText, a.surahNumber, a.ayahNumber), uthmaniText: stripOpeningBasmala(a.uthmaniText, a.surahNumber, a.ayahNumber) }));
+  };
+  return cachedQuran("search-index", async () => {
+    const parseFull = (value: unknown) => {
+      const full = z.object({ surahs: z.array(z.unknown()).length(114) }).parse(value);
+      return full.surahs.map((s, index) => validateSurah(s, index + 1));
+    };
+    try {
+      const [clean, uthmani] = await Promise.all([fetchJson(`${BASE}/quran/quran-simple-clean`, parseFull), fetchJson(`${BASE}/quran/quran-uthmani`, parseFull)]);
+      return clean.flatMap((s, index) => s.ayahs.map((a, i) => ({ surahNumber: s.number, surahName: s.name, ayahNumber: a.numberInSurah, globalNumber: a.number, cleanText: a.text, uthmaniText: uthmani[index].ayahs[i].text })));
+    } catch {
+      const [surahs, json] = await Promise.all([getSurahs(), fetchJson("https://api.quran.com/api/v4/quran/verses/uthmani", (value) => z.object({ verses: z.array(z.object({ verse_key: z.string(), text_uthmani: z.string().min(1) })).length(6236) }).parse(value), false)]);
+      return json.verses.map((v) => {
+        const [surah, ayah] = v.verse_key.split(":").map(Number);
+        const meta = surahs.find((s) => s.number === surah);
+        if (!meta) throw new Error("مرجع البحث غير صالح");
+        return { surahNumber: surah, surahName: meta.name, ayahNumber: ayah, globalNumber: refToGlobalNumber(surah, ayah), cleanText: normalizeArabic(v.text_uthmani), uthmaniText: v.text_uthmani };
       });
     }
-  }
-  await set(CACHE_KEY, ayahs);
-  return ayahs;
+  }, parseIndex);
+}
+export async function searchQuran(query: string): Promise<SearchResult[]> {
+  const q = normalizeArabic(query);
+  if (!q) return [];
+  const index = await getQuranSearchIndex();
+  return index.filter((a) => normalizeArabic(stripOpeningBasmala(a.cleanText, a.surahNumber, a.ayahNumber)).includes(q));
 }
 
-export async function searchQuran(query: string): Promise<SearchResult[]> {
-  const index = await getQuranSearchIndex();
-  const normalize = (text: string) => text.replace(/[\u0617-\u061A\u064B-\u0652\u06D6-\u06DC\u06DF-\u06E8\u06EA-\u06ED]/g, "").replace(/[أإآا]/g, "ا").replace(/[ةه]/g, "ه").replace(/[ىي]/g, "ي");
-  const q = normalize(query);
-  return index.filter(a => normalize(a.cleanText).includes(q));
+const EVERYAYAH_ALTERNATES: Record<string, string> = {
+  "ar.alafasy": "Alafasy_128kbps", "ar.minshawi": "Minshawy_Murattal_128kbps", "ar.husary": "Husary_128kbps",
+  "ar.husarymujawwad": "Husary_Mujawwad_128kbps", "ar.abdulbasitmurattal": "Abdul_Basit_Murattal_192kbps",
+  "ar.hudhaify": "Hudhaify_128kbps", "ar.ahmedajamy": "Ahmed_ibn_Ali_al-Ajamy_128kbps", "ar.shaatree": "Abu_Bakr_Ash-Shaatree_128kbps",
+};
+export function ayahAudioSources(reciter: ReciterOption, surah: number, ayah: number, global: number, preferred?: string): string[] {
+  const sources = [preferred, ayahAudioUrl(reciter, surah, ayah, global)].filter((url): url is string => !!url);
+  if (reciter.audio.type === "alquran") {
+    sources.push(`https://cdn.islamic.network/quran/audio/64/${reciter.audio.edition}/${global}.mp3`);
+    const folder = EVERYAYAH_ALTERNATES[reciter.audio.edition];
+    if (folder) sources.push(`https://everyayah.com/data/${folder}/${pad3(surah)}${pad3(ayah)}.mp3`);
+  }
+  return [...new Set(sources)];
 }

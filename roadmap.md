@@ -12,3 +12,10 @@
 - [x] Save the requested CRON_SECRET through the secure form.
 - [ ] Configure the scheduler's x-cron-secret header — user must configure its caller with the saved shared value; existing managed jobs do not supply this custom header.
 - [ ] Relocate non-relocatable pg_net — awaiting explicit approval for extension reinstallation and possible notification downtime; no destructive changes made.
+# Quran reliability request
+- [ ] Central validated fetch with timeout/retries, persistent SWR and secondary Quran source.
+- [ ] Basmala normalization, lighter partial favorites and local daily verse/streak/notifications.
+- [ ] Loading/error/retry/empty states and shared error boundary.
+- [ ] Audio fallback/recovery, verse navigation, last read and incremental surah/tafsir.
+- [ ] Daily prayer cache, calculation methods and safe adhan playback.
+- [ ] Tests, browser verification and save changes.
