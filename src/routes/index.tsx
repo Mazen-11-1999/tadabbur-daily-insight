@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { getOrGenerateReflection } from "@/lib/reflections.functions";
+import { useServerFn } from "@tanstack/react-start";
 import { BookOpen, Flame, Loader2, Lightbulb, LogIn, Bookmark } from "lucide-react";
 import { AuthHero3D } from "@/components/AuthHero3D";
 import { toast } from "sonner";
@@ -36,6 +37,7 @@ function HomePage() {
   const [streak, setStreak] = useState<{ current: number; longest: number } | null>(null);
   const [isFav, setIsFav] = useState(false);
 
+  const reflectionFn = useServerFn(getOrGenerateReflection);
   const [lastRead, setLastRead] = useState<{surah: number, ayah?: number, name: string} | null>(null);
   useEffect(() => {
     const saved = localStorage.getItem("quran_last_read");
@@ -70,16 +72,10 @@ function HomePage() {
   // Generate reflections + check fav + update streak
   useEffect(() => {
     if (!ayah) return;
+    if (!user) { setApplications([]); setLoadingApps(false); return; }
     setLoadingApps(true);
-    getOrGenerateReflection({
-      data: {
-        surah_number: ayah.surah.number,
-        ayah_number: ayah.numberInSurah,
-        arabic: ayah.arabic,
-        tafsir: ayah.tafsir,
-      },
-    })
-      .then((r) => setApplications(r.applications || []))
+    reflectionFn({ data: { surah_number: ayah.surah.number, ayah_number: ayah.numberInSurah } })
+      .then((r) => { setApplications(r.applications || []); if (r.error) toast.error(r.error); })
       .catch(() => {/* silent */})
       .finally(() => setLoadingApps(false));
 
@@ -183,6 +179,8 @@ function HomePage() {
                 <div key={i} className="h-12 rounded-lg bg-muted/40 animate-pulse" />
               ))}
             </div>
+          ) : !user ? (
+            <p className="text-sm text-muted-foreground">سجّل الدخول لعرض تطبيقات آية اليوم.</p>
           ) : applications.length === 0 ? (
             <p className="text-sm text-muted-foreground">لم تتوفر تطبيقات حالياً.</p>
           ) : (

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { useAuth } from "@/lib/auth-context";
@@ -26,6 +26,7 @@ function SettingsPage() {
   const [tafsir, setTafsir] = useState("ar.muyassar");
   const [reciter, setReciter] = useState("ar.alafasy");
   const [streak, setStreak] = useState<{ current: number; longest: number } | null>(null);
+  const [pushEndpoint, setPushEndpoint] = useState<string | null>(null);
   const [pushOn, setPushOn] = useState(false);
   const [hourLocal, setHourLocal] = useState(6); // ساعة محلية يختارها المستخدم
   const [pushBusy, setPushBusy] = useState(false);
@@ -60,18 +61,16 @@ function SettingsPage() {
       });
     supabase.from("streaks").select("current_streak, longest_streak").eq("user_id", user.id).maybeSingle()
       .then(({ data }) => { if (data) setStreak({ current: data.current_streak, longest: data.longest_streak }); });
-    // حالة الإشعارات
-    getSubFn().then((res) => {
-      if (res?.subscription) {
-        setPushOn(true);
-        // حوّل UTC → محلي
-        const utcHour = res.subscription.notification_hour;
-        const offsetH = -new Date().getTimezoneOffset() / 60;
-        let local = (utcHour + offsetH) % 24;
-        if (local < 0) local += 24;
-        setHourLocal(Math.round(local));
-      }
-    }).catch(() => { /* noop */ });
+    // اقرأ اشتراك الجهاز الحالي فقط؛ الساعات محفوظة بالتوقيت المحلي.
+    void (async () => {
+      const registration = await navigator.serviceWorker?.getRegistration();
+      const subscription = await registration?.pushManager.getSubscription();
+      if (!subscription) { setPushOn(false); setPushEndpoint(null); return; }
+      const res = await getSubFn({ data: { endpoint: subscription.endpoint } });
+      setPushEndpoint(subscription.endpoint);
+      setPushOn(res.subscription?.enabled ?? false);
+      if (res.subscription) setHourLocal(res.subscription.notification_hour);
+    })().catch(() => { /* keep push off when unavailable */ });
   }, [user]);
 
   const togglePush = async (next: boolean) => {
@@ -82,15 +81,15 @@ function SettingsPage() {
       if (next) {
         const sub = await subscribeToPush();
         if (!sub) { toast.error("لم يتم منح إذن الإشعارات"); setPushBusy(false); return; }
-        const offsetH = -new Date().getTimezoneOffset() / 60;
-        let utcH = (hourLocal - offsetH) % 24;
-        if (utcH < 0) utcH += 24;
-        await saveSubFn({ data: { ...sub, notification_hour: Math.round(utcH), user_agent: navigator.userAgent } });
+        await saveSubFn({ data: { ...sub, notification_hour: hourLocal, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, user_agent: navigator.userAgent } });
+        setPushEndpoint(sub.endpoint);
         setPushOn(true);
         toast.success("تم تفعيل الإشعارات اليومية ✓");
       } else {
-        const ep = await unsubscribeFromPush();
-        await removeSubFn({ data: { endpoint: ep ?? undefined } });
+        if (!pushEndpoint) throw new Error("missing current subscription");
+        await removeSubFn({ data: { endpoint: pushEndpoint } });
+        await unsubscribeFromPush();
+        setPushEndpoint(null);
         setPushOn(false);
         toast.success("تم إيقاف الإشعارات");
       }
@@ -137,11 +136,9 @@ function SettingsPage() {
   const changeHour = async (newHourLocal: number) => {
     setHourLocal(newHourLocal);
     if (!pushOn) return;
-    const offsetH = -new Date().getTimezoneOffset() / 60;
-    let utcH = (newHourLocal - offsetH) % 24;
-    if (utcH < 0) utcH += 24;
+    if (!pushEndpoint) return;
     try {
-      await updateHourFn({ data: { notification_hour: Math.round(utcH) } });
+      await updateHourFn({ data: { endpoint: pushEndpoint, notification_hour: newHourLocal, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone } });
       toast.success("تم حفظ الوقت");
     } catch { toast.error("تعذّر حفظ الوقت"); }
   };
@@ -330,6 +327,9 @@ function SettingsPage() {
         )}
         <p className="text-xs text-muted-foreground/80 mt-3">ملاحظة: التلاوات الصوتية تُحفظ تلقائياً عند تشغيلها أول مرة.</p>
       </section>
+      <div className="pt-4 border-t border-border/40">
+        <Button asChild variant="link" className="text-destructive"><Link to="/delete-account">حذف حسابي وبياناتي</Link></Button>
+      </div>
     </AppShell>
   );
 }

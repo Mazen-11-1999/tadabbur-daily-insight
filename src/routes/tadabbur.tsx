@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useAuth } from "@/lib/auth-context";
 import { useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -27,6 +29,9 @@ interface Msg { role: "user" | "assistant"; content: string }
 interface Suggestion { surah: number; ayah: number; surah_name: string; arabic: string; why: string; action: string }
 
 function TadabburPage() {
+  const { user } = useAuth();
+  const askFn = useServerFn(askTadabbur);
+  const moodFn = useServerFn(suggestByMood);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -37,12 +42,13 @@ function TadabburPage() {
   const send = async (text: string) => {
     const q = text.trim();
     if (!q || sending) return;
+    if (!user) { toast.error("سجّل الدخول لاستخدام معين التدبر"); return; }
     const next = [...messages, { role: "user" as const, content: q }];
     setMessages(next);
     setInput("");
     setSending(true);
     try {
-      const r = await askTadabbur({ data: { messages: next } });
+      const r = await askFn({ data: { messages: next } });
       if (r.error) toast.error(r.error);
       else setMessages([...next, { role: "assistant", content: r.reply }]);
     } catch {
@@ -54,10 +60,11 @@ function TadabburPage() {
   };
 
   const pickMood = async (mood: string) => {
+    if (!user) { toast.error("سجّل الدخول لاقتراح الآيات"); return; }
     setMoodLoading(mood);
     setSuggestions([]);
     try {
-      const r = await suggestByMood({ data: { mood } });
+      const r = await moodFn({ data: { mood } });
       if (r.error) toast.error(r.error);
       else setSuggestions(r.items ?? []);
     } catch {

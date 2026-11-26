@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_usage: {
+        Row: {
+          count: number
+          day: string
+          user_id: string
+        }
+        Insert: {
+          count?: number
+          day?: string
+          user_id: string
+        }
+        Update: {
+          count?: number
+          day?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       daily_reflections: {
         Row: {
           applications: Json
@@ -177,6 +195,7 @@ export type Database = {
           last_sent_date: string | null
           notification_hour: number
           p256dh: string
+          timezone: string
           updated_at: string
           user_agent: string | null
           user_id: string
@@ -190,6 +209,7 @@ export type Database = {
           last_sent_date?: string | null
           notification_hour?: number
           p256dh: string
+          timezone?: string
           updated_at?: string
           user_agent?: string | null
           user_id: string
@@ -203,6 +223,7 @@ export type Database = {
           last_sent_date?: string | null
           notification_hour?: number
           p256dh?: string
+          timezone?: string
           updated_at?: string
           user_agent?: string | null
           user_id?: string
@@ -238,7 +259,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      consume_ai_usage: { Args: never; Returns: boolean }
+      delete_account_data: { Args: { target_user: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
