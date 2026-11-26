@@ -9,5 +9,6 @@
 - [x] Add confirmed account deletion and settings link.
 - [x] Remove only the current notification subscription.
 - [x] Verify requested rules and flows.
-- [ ] Configure CRON_SECRET and the scheduler's x-cron-secret header — user must save the shared value and configure its caller; existing managed jobs do not supply this custom header.
+- [x] Save the requested CRON_SECRET through the secure form.
+- [ ] Configure the scheduler's x-cron-secret header — user must configure its caller with the saved shared value; existing managed jobs do not supply this custom header.
 - [ ] Relocate non-relocatable pg_net — awaiting explicit approval for extension reinstallation and possible notification downtime; no destructive changes made.
