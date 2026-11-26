@@ -21,6 +21,8 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "آية اليوم مع تفسيرها وتلاوتها وتطبيقاتها العملية في حياتك." },
       { property: "og:title", content: "تدبر — آية اليوم" },
       { property: "og:description", content: "حوّل قراءة القرآن إلى منهج حياة بآية كل يوم." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: HomePage,

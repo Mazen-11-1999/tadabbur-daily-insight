@@ -1,11 +1,13 @@
 # Requested security changes
-- [ ] Inspect only the selected extension finding; leave other findings unchanged.
-- [ ] Attach authentication to server calls.
-- [ ] Protect notification delivery with the requested secret.
-- [ ] Authenticate AI and enforce 30 daily requests with atomic counting.
-- [ ] Validate verse references and fetch trusted server text.
-- [ ] Use device timezone for notification hour and sent date.
-- [ ] Update the default and legacy reciter values.
-- [ ] Add confirmed account deletion and settings link.
-- [ ] Remove only the current notification subscription.
-- [ ] Verify requested rules and flows.
+- [x] Inspect only the selected extension finding; leave other findings unchanged.
+- [x] Attach authentication to server calls.
+- [x] Protect notification delivery with the requested secret (fail closed until configured).
+- [x] Authenticate AI and enforce 30 daily requests with atomic counting.
+- [x] Validate verse references and fetch trusted server text.
+- [x] Use device timezone for notification hour and sent date.
+- [x] Update the default and legacy reciter values.
+- [x] Add confirmed account deletion and settings link.
+- [x] Remove only the current notification subscription.
+- [x] Verify requested rules and flows.
+- [ ] Configure CRON_SECRET and the scheduler's x-cron-secret header — user must save the shared value and configure its caller; existing managed jobs do not supply this custom header.
+- [ ] Relocate non-relocatable pg_net — awaiting explicit approval for extension reinstallation and possible notification downtime; no destructive changes made.

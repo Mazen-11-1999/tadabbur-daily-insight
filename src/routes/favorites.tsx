@@ -14,6 +14,10 @@ export const Route = createFileRoute("/favorites")({
     meta: [
       { title: "المفضلة — تدبر" },
       { name: "description", content: "آياتك المحفوظة." },
+      { property: "og:title", content: "المفضلة — تدبر" },
+      { property: "og:description", content: "آياتك المحفوظة." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: FavoritesPage,

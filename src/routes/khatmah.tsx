@@ -12,6 +12,10 @@ export const Route = createFileRoute("/khatmah")({
     meta: [
       { title: "خطة الختمة" },
       { name: "description", content: "تابع خطة ختمتك للقرآن الكريم." },
+      { property: "og:title", content: "خطة الختمة" },
+      { property: "og:description", content: "تابع خطة ختمتك للقرآن الكريم." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: KhatmahPage,

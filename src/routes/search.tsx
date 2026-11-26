@@ -11,6 +11,10 @@ export const Route = createFileRoute("/search")({
     meta: [
       { title: "البحث في القرآن الكريم" },
       { name: "description", content: "ابحث في القرآن الكريم بالكلمة أو الآية." },
+      { property: "og:title", content: "البحث في القرآن الكريم" },
+      { property: "og:description", content: "ابحث في القرآن الكريم بالكلمة أو الآية." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: SearchPage,

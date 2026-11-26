@@ -13,6 +13,10 @@ export const Route = createFileRoute("/surah/$surahNumber")({
     meta: [
       { title: `سورة ${params.surahNumber} — تدبر` },
       { name: "description", content: "اقرأ السورة كاملة مع التلاوة والتفسير." },
+      { property: "og:title", content: `سورة ${params.surahNumber} — تدبر` },
+      { property: "og:description", content: "اقرأ السورة كاملة مع التلاوة والتفسير." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: SurahPage,

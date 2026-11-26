@@ -8,7 +8,9 @@ export const timezoneSchema = z.string().min(1).max(100).refine((zone) => {
   catch { return false; }
 }, "المنطقة الزمنية غير صالحة");
 
-export const subscriptionEndpointSchema = z.string().url().refine((value) => new URL(value).protocol === "https:", "عنوان الاشتراك غير صالح");
+export const subscriptionEndpointSchema = z.string().url().refine((value) => {
+  try { return new URL(value).protocol === "https:"; } catch { return false; }
+}, "عنوان الاشتراك غير صالح");
 
 export function localNotificationTime(date: Date, timezone: string) {
   const parts = new Intl.DateTimeFormat("en-CA", {

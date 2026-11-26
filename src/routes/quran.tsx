@@ -10,6 +10,10 @@ export const Route = createFileRoute("/quran")({
     meta: [
       { title: "المصحف — تدبر" },
       { name: "description", content: "تصفّح سور القرآن الكريم كاملاً." },
+      { property: "og:title", content: "المصحف — تدبر" },
+      { property: "og:description", content: "تصفّح سور القرآن الكريم كاملاً." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: QuranIndex,

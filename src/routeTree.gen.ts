@@ -9,69 +9,24 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TadabburRouteImport } from './routes/tadabbur'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as SearchRouteImport } from './routes/search'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as QuranRouteImport } from './routes/quran'
-import { Route as PrayerRouteImport } from './routes/prayer'
-import { Route as MemorizeRouteImport } from './routes/memorize'
-import { Route as KhatmahRouteImport } from './routes/khatmah'
-import { Route as FavoritesRouteImport } from './routes/favorites'
-import { Route as DeleteAccountRouteImport } from './routes/delete-account'
-import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as DeleteAccountRouteImport } from './routes/delete-account'
+import { Route as FavoritesRouteImport } from './routes/favorites'
+import { Route as KhatmahRouteImport } from './routes/khatmah'
+import { Route as MemorizeRouteImport } from './routes/memorize'
+import { Route as PrayerRouteImport } from './routes/prayer'
+import { Route as QuranRouteImport } from './routes/quran'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as SearchRouteImport } from './routes/search'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as TadabburRouteImport } from './routes/tadabbur'
 import { Route as SurahSurahNumberRouteImport } from './routes/surah.$surahNumber'
 import { Route as ApiPublicHooksSendNotificationsRouteImport } from './routes/api/public/hooks/send-notifications'
 
-const TadabburRoute = TadabburRouteImport.update({
-  id: '/tadabbur',
-  path: '/tadabbur',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SearchRoute = SearchRouteImport.update({
-  id: '/search',
-  path: '/search',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QuranRoute = QuranRouteImport.update({
-  id: '/quran',
-  path: '/quran',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrayerRoute = PrayerRouteImport.update({
-  id: '/prayer',
-  path: '/prayer',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MemorizeRoute = MemorizeRouteImport.update({
-  id: '/memorize',
-  path: '/memorize',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const KhatmahRoute = KhatmahRouteImport.update({
-  id: '/khatmah',
-  path: '/khatmah',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FavoritesRoute = FavoritesRouteImport.update({
-  id: '/favorites',
-  path: '/favorites',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DeleteAccountRoute = DeleteAccountRouteImport.update({
-  id: '/delete-account',
-  path: '/delete-account',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -79,9 +34,54 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const DeleteAccountRoute = DeleteAccountRouteImport.update({
+  id: '/delete-account',
+  path: '/delete-account',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FavoritesRoute = FavoritesRouteImport.update({
+  id: '/favorites',
+  path: '/favorites',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KhatmahRoute = KhatmahRouteImport.update({
+  id: '/khatmah',
+  path: '/khatmah',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MemorizeRoute = MemorizeRouteImport.update({
+  id: '/memorize',
+  path: '/memorize',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrayerRoute = PrayerRouteImport.update({
+  id: '/prayer',
+  path: '/prayer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuranRoute = QuranRouteImport.update({
+  id: '/quran',
+  path: '/quran',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TadabburRoute = TadabburRouteImport.update({
+  id: '/tadabbur',
+  path: '/tadabbur',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SurahSurahNumberRoute = SurahSurahNumberRouteImport.update({
@@ -215,74 +215,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/tadabbur': {
-      id: '/tadabbur'
-      path: '/tadabbur'
-      fullPath: '/tadabbur'
-      preLoaderRoute: typeof TadabburRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/search': {
-      id: '/search'
-      path: '/search'
-      fullPath: '/search'
-      preLoaderRoute: typeof SearchRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/quran': {
-      id: '/quran'
-      path: '/quran'
-      fullPath: '/quran'
-      preLoaderRoute: typeof QuranRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/prayer': {
-      id: '/prayer'
-      path: '/prayer'
-      fullPath: '/prayer'
-      preLoaderRoute: typeof PrayerRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/memorize': {
-      id: '/memorize'
-      path: '/memorize'
-      fullPath: '/memorize'
-      preLoaderRoute: typeof MemorizeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/khatmah': {
-      id: '/khatmah'
-      path: '/khatmah'
-      fullPath: '/khatmah'
-      preLoaderRoute: typeof KhatmahRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/favorites': {
-      id: '/favorites'
-      path: '/favorites'
-      fullPath: '/favorites'
-      preLoaderRoute: typeof FavoritesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/delete-account': {
-      id: '/delete-account'
-      path: '/delete-account'
-      fullPath: '/delete-account'
-      preLoaderRoute: typeof DeleteAccountRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -292,11 +229,74 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/delete-account': {
+      id: '/delete-account'
+      path: '/delete-account'
+      fullPath: '/delete-account'
+      preLoaderRoute: typeof DeleteAccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/favorites': {
+      id: '/favorites'
+      path: '/favorites'
+      fullPath: '/favorites'
+      preLoaderRoute: typeof FavoritesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/khatmah': {
+      id: '/khatmah'
+      path: '/khatmah'
+      fullPath: '/khatmah'
+      preLoaderRoute: typeof KhatmahRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/memorize': {
+      id: '/memorize'
+      path: '/memorize'
+      fullPath: '/memorize'
+      preLoaderRoute: typeof MemorizeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/prayer': {
+      id: '/prayer'
+      path: '/prayer'
+      fullPath: '/prayer'
+      preLoaderRoute: typeof PrayerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quran': {
+      id: '/quran'
+      path: '/quran'
+      fullPath: '/quran'
+      preLoaderRoute: typeof QuranRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tadabbur': {
+      id: '/tadabbur'
+      path: '/tadabbur'
+      fullPath: '/tadabbur'
+      preLoaderRoute: typeof TadabburRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/surah/$surahNumber': {

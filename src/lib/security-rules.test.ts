@@ -1,4 +1,10 @@
-import { describe, expect, test } from "bun:test";
+import { describe, it as test } from "node:test";
+import assert from "node:assert/strict";
+const expect = (value: unknown) => ({
+  toBe: (expected: unknown) => assert.equal(value, expected),
+  toEqual: (expected: unknown) => assert.deepEqual(value, expected),
+  toThrow: () => assert.throws(value as () => unknown),
+});
 import { AI_DAILY_LIMIT, localNotificationTime, notificationIsDue, timezoneSchema, subscriptionEndpointSchema } from "./security-rules";
 import { validCronSecret } from "./cron-auth.server";
 import { validateAyahRef } from "./reflections.server";

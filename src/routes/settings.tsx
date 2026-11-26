@@ -16,7 +16,12 @@ import { useServerFn } from "@tanstack/react-start";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
-    meta: [{ title: "الإعدادات — تدبر" }, { name: "description", content: "إعدادات التطبيق وتفضيلاتك." }],
+    meta: [{ title: "الإعدادات — تدبر" }, { name: "description", content: "إعدادات التطبيق وتفضيلاتك." },
+      { property: "og:title", content: "الإعدادات — تدبر" },
+      { property: "og:description", content: "إعدادات التطبيق وتفضيلاتك." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
   }),
   component: SettingsPage,
 });
